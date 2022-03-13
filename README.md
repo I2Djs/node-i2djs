@@ -1,2 +1,2 @@
 # node-i2djs
- I2Djs graphics for Node
+ I2Djs canvas drawing api for Nodejs
