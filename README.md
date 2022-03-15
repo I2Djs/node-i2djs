@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/I2Djs/I2Djs/blob/master/i2djsLogo.png?raw=true" width=500>
+  <img src="https://i2djs.github.io/node-i2djs/nodeI2djsLogo.svg" width=500>
 </p>
 
 # node-i2djs
