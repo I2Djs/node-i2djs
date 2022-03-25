@@ -1,7 +1,7 @@
 import commonjs from "@rollup/plugin-commonjs";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
+// import { nodeResolve } from "@rollup/plugin-node-resolve";
 // import eslint from '@rbnlffl/rollup-plugin-eslint';
-import { terser } from "rollup-plugin-terser";
+// import { terser } from "rollup-plugin-terser";
 import buble from "@rollup/plugin-buble";
 
 const version = process.env.VERSION || require("./package.json").version;

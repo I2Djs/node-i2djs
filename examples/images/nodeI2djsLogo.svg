@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="872px" height="743px" viewBox="0 0 872 743" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group 93</title>
+    <defs>
+        <polygon id="path-1" points="0.0219561092 0 190.940628 0 190.940628 215 0.0219561092 215"></polygon>
+        <linearGradient x1="-47.4801797%" y1="50%" x2="149.350662%" y2="50%" id="linearGradient-3">
+            <stop stop-color="#FF7C80" offset="0%"></stop>
+            <stop stop-color="#0075F3" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="-205.773441%" y1="50%" x2="100%" y2="50%" id="linearGradient-4">
+            <stop stop-color="#FF7C80" offset="0%"></stop>
+            <stop stop-color="#0075F3" offset="100%"></stop>
+        </linearGradient>
+        <radialGradient cx="50%" cy="50%" fx="50%" fy="50%" r="50%" id="radialGradient-5">
+            <stop stop-color="#3476DB" offset="0%"></stop>
+            <stop stop-color="#6278C8" offset="61.3035017%"></stop>
+            <stop stop-color="#897AB6" offset="68.2286514%"></stop>
+            <stop stop-color="#D27D97" offset="69.7412451%"></stop>
+            <stop stop-color="#FF7F83" offset="100%"></stop>
+        </radialGradient>
+        <linearGradient x1="-10.9596123%" y1="60.3853523%" x2="111.238047%" y2="60.3853523%" id="linearGradient-6">
+            <stop stop-color="#FF7F83" offset="0%"></stop>
+            <stop stop-color="#2F76DE" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Icons" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-93" transform="translate(50.000000, 62.000000)">
+            <g id="12d" transform="translate(101.000000, 344.000000)">
+                <g id="Group-3" transform="translate(0.000000, 82.000000)">
+                    <mask id="mask-2" fill="white">
+                        <use xlink:href="#path-1"></use>
+                    </mask>
+                    <g id="Clip-2"></g>
+                    <path d="M112.073684,-1.60205182e-13 C38.3059775,-0.98642057 0.89473463,-0.98642057 -0.160044532,2.23154828e-13 C-1.21482369,0.98642057 -1.21482369,15.117876 -0.160044532,42.3943662 L69.6068678,42.3943662 L69.6068678,215 L190.940628,215 L190.940628,172.605634 L112.073684,172.605634 L112.073684,-1.60205182e-13 Z" id="Fill-1" fill="#FF7F83" mask="url(#mask-2)"></path>
+                </g>
+                <polyline id="Fill-4" fill="url(#linearGradient-3)" points="260.684211 254.605634 260.684211 215.239437 358.031579 215.239437 358.031579 82 139 82 139 124.394366 315.442105 124.394366 315.442105 172.84507 218.094737 172.84507 218.094737 297 428 297 428 254.605634 260.684211 254.605634"></polyline>
+                <path d="M426.688525,82 L384,82 L384,215.239437 L426.688525,215.239437 L426.688525,124.394366 L484.357672,124.394366 C508.080295,124.394366 527.311475,143.493028 527.311475,167.052183 L527.311475,211.947817 C527.311475,235.506972 508.080295,254.605634 484.357672,254.605634 L454.131148,254.605634 L454.131148,297 L487.510525,297 C533.068328,297 570,260.322817 570,215.078944 L570,163.921056 C570,118.677183 533.068328,82 487.510525,82 L426.688525,82" id="Fill-5" fill="url(#linearGradient-4)"></path>
+                <path d="M68,54 C53.0882857,54 41,41.9272203 41,27.0346338 C41,12.1420472 54.5,0 68,0 C81.5,0 95,12.1420472 95,27.0346338 C95,41.9272203 82.9117143,54 68,54 Z" id="Fill-6" fill="url(#radialGradient-5)"></path>
+            </g>
+            <polyline id="Path-28" stroke="url(#linearGradient-6)" stroke-width="100" points="0 681 0 282.315727 386 0 772 282.315727 772 681"></polyline>
+        </g>
+    </g>
+</svg>
