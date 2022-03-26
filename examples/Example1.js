@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-	let { canvasPdfLayer } = require("./../dist/i2d.js");
+	let { canvasPdfLayer } = require("./../dist/node-i2d.js");
 	const fs = require('fs');
 	var path = require('path');
 

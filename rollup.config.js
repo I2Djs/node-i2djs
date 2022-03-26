@@ -20,7 +20,7 @@ export default [
         output: [
             {
                 banner,
-                file: "dist/i2d.js",
+                file: "dist/node-i2d.js",
                 format: "cjs",
                 name: "i2d",
             },
