@@ -3,6 +3,6 @@
 </p>
 
 # node-I2djs
- Node I2Djs - is an Open source nodejs framework for server side canvas based 2D graphical rendering.
+ Node I2Djs - is an Open source nodejs framework for server side 2D graphics. Based on Canvas.
  
 ### Node - I2dJs - Canvas
