@@ -1,6 +1,6 @@
 {
   "name": "node-i2djs",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "I2Djs graphics module for Node",
   "main": "index.js",
   "scripts": {
