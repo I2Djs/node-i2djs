@@ -8,7 +8,6 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var flubber = require('flubber');
-var stackblurCanvas = require('stackblur-canvas');
 
 /* eslint-disable no-undef */
 var animatorInstance = null;
@@ -314,102 +313,6 @@ var queue = animatorInstance; // default function animateQueue () {
 //   if (!animatorInstance) { animatorInstance = new ExeQueue() }
 //   return animatorInstance
 // }
-
-/* eslint-disable no-undef */
-function VDom() {}
-
-VDom.prototype.execute = function execute() {
-    this.root.execute();
-    this.stateModified = false;
-};
-
-VDom.prototype.rootNode = function root(_) {
-    this.root = _;
-    this.stateModified = true;
-};
-
-VDom.prototype.eventsCheck = function eventsCheck(nodes, mouseCoor, rawEvent) {
-    var self = this;
-    var node, temp;
-
-    for (var i = 0; i <= nodes.length - 1; i += 1) {
-        var d = nodes[i];
-        var coOr = {
-            x: mouseCoor.x,
-            y: mouseCoor.y,
-        };
-        transformCoOr(d, coOr);
-
-        if (
-            d.in({
-                x: coOr.x,
-                y: coOr.y,
-            })
-        ) {
-            if (d.children && d.children.length > 0) {
-                temp = self.eventsCheck(
-                    d.children,
-                    {
-                        x: coOr.x,
-                        y: coOr.y,
-                    },
-                    rawEvent
-                );
-
-                if (temp) {
-                    node = temp;
-                }
-            } else {
-                node = d;
-            }
-        }
-    }
-
-    return node;
-};
-
-VDom.prototype.transformCoOr = transformCoOr;
-
-function transformCoOr(d, coOr) {
-    var assign;
-
-    var hozMove = 0;
-    var verMove = 0;
-    var scaleX = 1;
-    var scaleY = 1;
-    var coOrLocal = coOr;
-
-    if (d.attr.transform && d.attr.transform.translate) {
-        (assign = d.attr.transform.translate, hozMove = assign[0], verMove = assign[1]);
-        coOrLocal.x -= hozMove;
-        coOrLocal.y -= verMove;
-    }
-
-    if (d.attr.transform && d.attr.transform.scale) {
-        scaleX = d.attr.transform.scale[0] !== undefined ? d.attr.transform.scale[0] : 1;
-        scaleY = d.attr.transform.scale[1] !== undefined ? d.attr.transform.scale[1] : scaleX;
-        coOrLocal.x /= scaleX;
-        coOrLocal.y /= scaleY;
-    }
-
-    if (d.attr.transform && d.attr.transform.rotate) {
-        var rotate = d.attr.transform.rotate[0];
-
-        var cen = {
-            x: d.attr.transform.rotate[1],
-            y: d.attr.transform.rotate[2],
-        };
-        var x = coOrLocal.x;
-        var y = coOrLocal.y;
-        var cx = cen.x;
-        var cy = cen.y;
-        var radians = (Math.PI / 180) * rotate;
-        var cos = Math.cos(radians);
-        var sin = Math.sin(radians);
-        coOrLocal.x = cos * (x - cx) + sin * (y - cy) + cx;
-        coOrLocal.y = cos * (y - cy) - sin * (x - cx) + cy;
-    }
-}
 
 /* eslint-disable no-undef */
 var sqrt = Math.sqrt;
@@ -4980,9 +4883,8 @@ function CanvasPattern(self, config, width, height) {
     var selfSelf = this;
     var patternId = config.id ? config.id : "pattern-" + Math.ceil(Math.random() * 1000);
     this.repeatInd = config.repeat ? config.repeat : "repeat";
-    if (self.ENV === "NODE") {
-        selfSelf.pattern = canvasLayer({}, height, width);
-    }
+    
+    selfSelf.pattern = canvasLayer$1({}, height, width);
 
     selfSelf.pattern.setAttr("id", patternId);
     self.prependChild([selfSelf.pattern]);
@@ -5043,13 +4945,16 @@ CanvasDom.prototype = {
 function imageInstance(self) {
     var imageIns = new Image();
     imageIns.crossOrigin = "anonymous";
-
+    imageIns.dataMode = Image.MODE_MIME | Image.MODE_IMAGE;
+    // console.log(self.ctx.type_);
     imageIns.onload = function onload() {
-        self.attr.height = self.attr.height ? self.attr.height : this.height;
-        self.attr.width = self.attr.width ? self.attr.width : this.width;
-        self.imageObj = this;
+        self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+        self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
+        self.imageObj = imageIns;
 
         if (self.nodeExe.attr.onload && typeof self.nodeExe.attr.onload === "function") {
+            // console.log(self);
+            // console.log(self.nodeExe);
             self.nodeExe.attr.onload.call(self.nodeExe, self.image);
         }
 
@@ -5073,6 +4978,7 @@ function RenderImage(ctx, props, stylesProps, onloadExe, onerrorExe, nodeExe) {
     self.style = stylesProps;
     self.nodeName = "Image";
     self.nodeExe = nodeExe;
+    nodeExe.dom = this;
 
     for (var key in props) {
         this.setAttr(key, props[key]);
@@ -5151,6 +5057,7 @@ RenderImage.prototype.execute = function RIexecute() {
     var y = ref.y; if ( y === void 0 ) y = 0;
 
     if (this.imageObj) {
+        // console.log(this.imageObj);
         // this.ctx.drawImage(this.rImageObj ? this.rImageObj.canvas : this.imageObj, x, y, width, height);
         this.ctx.drawImage(this.imageObj, x, y, width, height);
     }
@@ -6200,6 +6107,8 @@ CanvasNodeExe.prototype.setAttr = function CsetAttr(attr, value) {
         } else {
             this.attr[attr] = value;
         }
+        // console.log(this);
+        // console.log(this.dom);
         this.dom.setAttr(attr, value);
     } else if (arguments.length === 1 && typeof attr === "object") {
         var keys = Object.keys(attr);
@@ -6501,22 +6410,24 @@ GetCanvasImgInstance.prototype.setAttr = function (attr, value) {
 function textureImageInstance(self, url) {
     var imageIns = new Image();
     imageIns.crossOrigin = "anonymous";
+    imageIns.dataMode = Image.MODE_MIME | Image.MODE_IMAGE;
     imageIns.src = url;
     if (!self) {
         return imageIns;
     }
+    
     imageIns.onload = function onload() {
         if (!self) {
             return;
         }
         if (self.attr) {
-            self.attr.height = self.attr.height ? self.attr.height : this.naturalHeight;
-            self.attr.width = self.attr.width ? self.attr.width : this.naturalWidth;
+            self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+            self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
         }
         if (self instanceof RenderTexture) {
             self.setSize(self.attr.width, self.attr.height);
         }
-        self.imageObj = this;
+        self.imageObj = imageIns;
 
         if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
             self.attr.onload.call(self, self.image);
@@ -6724,188 +6635,232 @@ RenderTexture.prototype.next = function (index) {
     postProcess(this);
 };
 
-function canvasLayer(config, height, width) {
+function createPage (ctx) {
+        var onChangeExe;
+        var root = new CanvasNodeExe(
+            ctx,
+            {
+                el: "g",
+                attr: {
+                    id: "rootNode",
+                },
+            },
+            domId(),
+            999
+        );
+        root.ENV = "NODE";
+        var execute = root.execute.bind(root);
+        var ratio = getPixlRatio(ctx);
+        var onClear = function (ctx, width, height) {
+            ctx.clearRect(0, 0, width * ratio, height * ratio);
+        };
+
+        root.setClear = function (exe) {
+            onClear = exe;
+        };
+
+        root.onChange = function (exec) {
+            onChangeExe = exec;
+        };
+
+        root.getPixels = function (x, y, width_, height_) {
+            return this.ctx.getImageData(x, y, width_, height_);
+        };
+
+        root.putPixels = function (imageData, x, y) {
+            return this.ctx.putImageData(imageData, x, y);
+        };
+
+        root.clear = function () {
+            onClear(this.ctx, this.width, this.height);
+        };
+
+        root.addPage = function () {
+            ctx.addPage();
+        };
+
+        root.setContext = function (prop, value) {
+            /** Expecting value to be array if multiple aruments */
+            if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
+                this.ctx[prop].apply(null, value);
+            } else if (this.ctx[prop]) {
+                this.ctx[prop] = value;
+            }
+        };
+
+        root.setSize = function (width_, height_) {
+            // width = width_;
+            // height = height_;
+            this.domEl = new Canvas(width_, height_, "pdf");
+            ctx = this.domEl.getContext("2d", config);
+            ctx.type_ = "pdf";
+            this.width = width_;
+            this.height = height_;
+            this.ctx = ctx;
+            this.execute();
+        };
+
+        root.execute = function executeExe() {
+            onClear(ctx, this.width, this.height);
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            this.updateBBox();
+            execute();
+            if (onChangeExe && this.stateModified) {
+                onChangeExe();
+            }
+            this.stateModified = false;
+        };
+
+        root.update = function executeUpdate() {
+            this.execute();
+        };
+
+        root.toDataURL = function (p) {
+            return this.domEl.toDataURL(p);
+        };
+
+        root.getPixels = function (x, y, width_, height_) {
+            var imageData = this.ctx.getImageData(x, y, width_, height_);
+            var pixelInstance = new PixelObject(imageData, width_, height_);
+
+            return pixelInstance;
+        };
+
+        root.putPixels = function (Pixels, x, y) {
+            if (!(Pixels instanceof PixelObject)) {
+                return;
+            }
+            return this.ctx.putImageData(Pixels.imageData, x, y);
+        };
+
+        root.clear = function () {
+            onClear();
+        };
+
+        root.createTexture = function (config) {
+            return new RenderTexture(this, config);
+        };
+
+        root.createAsyncTexture = function (config) {
+            var this$1$1 = this;
+
+            return new Promise(function (resolve, reject) {
+                var textureInstance = new RenderTexture(this$1$1, config);
+                textureInstance.onLoad(function () {
+                    resolve(textureInstance);
+                });
+            });
+        };
+
+        root.setContext = function (prop, value) {
+            /** Expecting value to be array if multiple aruments */
+            if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
+                this.ctx[prop].apply(null, value);
+            } else if (this.ctx[prop]) {
+                this.ctx[prop] = value;
+            }
+        };
+
+        root.createPattern = createCanvasPattern;
+
+        root.createClip = createCanvasClip;
+
+        root.createMask = createCanvasMask;
+
+        return root;
+    }
+
+function pdfLayer(config, height, width) {
     if ( height === void 0 ) height = 0;
     if ( width === void 0 ) width = 0;
 
-    // if (!Canvas) {
-    //     console.error("Canvas missing from node");
-    //     console.error('Install "Canvas" "canvas-5-polyfill" node modules');
-    //     console.error('Make "Canvas" "Image" "Path2D" objects global from the above modules');
-    //     return;
-    // }
-    var onChangeExe;
-    var layer = createCanvas(width, height);
+    var layer = createCanvas(width, height, "pdf");
     var ctx = layer.getContext("2d", config);
-    var ratio = getPixlRatio(ctx);
-    var onClear = function (ctx) {
-        ctx.clearRect(0, 0, width * ratio, height * ratio);
-    };
-    var vDomInstance = new VDom();
-    var vDomIndex = queueInstance.addVdom(vDomInstance);
-    var root = new CanvasNodeExe(
-        ctx,
-        {
-            el: "g",
-            attr: {
-                id: "rootNode",
-            },
-        },
-        domId(),
-        vDomIndex
-    );
-    vDomInstance.rootNode(root);
-    var execute = root.execute.bind(root);
-    root.domEl = layer;
-    root.height = height;
-    root.width = width;
-    root.type = "CANVAS";
-    root.ENV = "NODE";
+    getPixlRatio(ctx);
+    ctx.type_ = "pdf";
 
-    root.setClear = function (exe) {
-        onClear = exe;
-    };
-
-    root.onChange = function (exec) {
-        onChangeExe = exec;
-    };
-
-    root.getPixels = function (x, y, width_, height_) {
-        return this.ctx.getImageData(x, y, width_, height_);
-    };
-
-    root.putPixels = function (imageData, x, y) {
-        return this.ctx.putImageData(imageData, x, y);
-    };
-
-    root.clear = function () {
-        onClear();
-    };
-
-    root.setContext = function (prop, value) {
-        /** Expecting value to be array if multiple aruments */
-        if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
-            this.ctx[prop].apply(null, value);
-        } else if (this.ctx[prop]) {
-            this.ctx[prop] = value;
-        }
-    };
-
-    root.setSize = function (width_, height_) {
-        // cHeight = height_;
-        // cWidth = width_;
-        width = width_;
-        height = height_;
-        this.domEl = new Canvas(width, height);
-        ctx = this.domEl.getContext("2d", config);
-        this.width = width;
-        this.height = height;
+    function PDFCreator() {
+        this.pages = [];
         this.ctx = ctx;
-        this.execute();
-    };
-
-    root.execute = function () {
-        onClear(ctx);
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        root.updateBBox();
-        execute();
-    };
-
-    root.execute = function executeExe() {
-        onClear(ctx);
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        this.updateBBox();
-        execute();
-        if (onChangeExe && this.stateModified) {
-            onChangeExe();
-        }
-        this.stateModified = false;
-    };
-
-    root.update = function executeUpdate() {
-        this.execute();
-    };
-
-    root.toDataURL = function (p) {
-        return this.domEl.toDataURL(p);
-    };
-
-    root.getPixels = function (x, y, width_, height_) {
-        var imageData = this.ctx.getImageData(x, y, width_, height_);
-        var pixelInstance = new PixelObject(imageData, width_, height_);
-
-        return pixelInstance;
-    };
-
-    root.putPixels = function (Pixels, x, y) {
-        if (!(Pixels instanceof PixelObject)) {
-            return;
-        }
-        return this.ctx.putImageData(Pixels.imageData, x, y);
-    };
-
-    root.clear = function () {
-        onClear();
-    };
-
-    root.createTexture = function (config) {
-        return new RenderTexture(this, config);
-    };
-
-    root.createAsyncTexture = function (config) {
-        var this$1$1 = this;
-
-        return new Promise(function (resolve, reject) {
-            var textureInstance = new RenderTexture(this$1$1, config);
-            textureInstance.onLoad(function () {
-                resolve(textureInstance);
-            });
+        this.domEl = layer;
+    }
+    PDFCreator.prototype.clear = function () {
+        this.pages.forEach(function (page) {
+            page.clear();
         });
     };
+    PDFCreator.prototype.execute = function () {
+        var self = this;
+        this.pages.forEach(function (page, i) {
+            self.ctx.save();
+            if (i !== 0) {
+                page.addPage();
+            }
+            page.execute();
+            self.ctx.restore();
+        });
+    };
+    PDFCreator.prototype.addPage = function () {
+        var newpage = createPage(ctx);
+        newpage.domEl = layer;
+        newpage.height = height;
+        newpage.width = width;
+        newpage.type = "CANVAS";
+        newpage.EXEType = "pdf";
+        newpage.ctx = ctx;
 
-    root.setContext = function (prop, value) {
-        /** Expecting value to be array if multiple aruments */
-        if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
-            this.ctx[prop].apply(null, value);
-        } else if (this.ctx[prop]) {
-            this.ctx[prop] = value;
-        }
+        ctx.textDrawingMode = "glyph";
+        this.pages.push(newpage);
+        return newpage;
+    };
+    PDFCreator.prototype.exportPdf = function (metaData) {
+        if ( metaData === void 0 ) metaData = {
+          title: 'I2DJs Pdf',
+          keywords: 'I2Djs pdf generator demo, canvas',
+          creationDate: new Date()
+        };
+
+
+        return this.domEl.toBuffer('application/pdf', metaData);
     };
 
-    root.createPattern = createCanvasPattern;
+    return new PDFCreator(ctx);
+}
 
-    root.createClip = createCanvasClip;
-
-    root.createMask = createCanvasMask;
+function canvasLayer$1(config, height, width) {
+    if ( height === void 0 ) height = 0;
+    if ( width === void 0 ) width = 0;
+    var layer = createCanvas(width, height);
+    var ctx = layer.getContext("2d", config);
+    getPixlRatio(ctx);
+    var root = createPage(ctx);
+        root.domEl = layer;
+        root.height = height;
+        root.width = width;
+        root.type = "CANVAS";
+        root.ctx = ctx;
 
     return root;
 }
 
 var canvasAPI = {
-    canvasLayer: canvasLayer,
+    canvasLayer: canvasLayer$1,
+    pdfLayer: pdfLayer
 };
 
-var utilities = {
-    blur: function (radius) {
-        if ( radius === void 0 ) radius = 1;
-
-        function blurExec(imageData) {
-            return stackblurCanvas.imageDataRGBA(imageData, 0, 0, imageData.width, imageData.height, radius);
-        }
-        return blurExec;
-    },
-    greyScale: function () {},
-};
+// import utility from "./modules/utilities";
 
 var pathIns = path.instance;
-var canvasNodeLayer = canvasAPI.canvasNodeLayer;
+var canvasLayer = canvasAPI.canvasLayer;
+var canvasPdfLayer = canvasAPI.pdfLayer;
+// export { utility };
 
 exports.Path = pathIns;
 exports.behaviour = behaviour;
-exports.canvasNodeLayer = canvasNodeLayer;
+exports.canvasLayer = canvasLayer;
+exports.canvasPdfLayer = canvasPdfLayer;
 exports.chain = chain;
 exports.color = colorMap$1;
 exports.ease = fetchTransitionType;
 exports.geometry = geometry;
 exports.queue = queue;
-exports.utility = utilities;

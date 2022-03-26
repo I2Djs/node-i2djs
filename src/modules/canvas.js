@@ -8,7 +8,6 @@ import behaviour from "./behaviour.js";
 const { createCanvas, Image } = require('canvas');
 const { Path2D } = require("canvas-5-polyfill");
 
-// import { imageDataRGB as blur } from "stackblur-canvas";
 import {
     NodePrototype,
     CollectionPrototype,
@@ -350,9 +349,8 @@ function CanvasPattern(self, config = {}, width = 0, height = 0) {
     const selfSelf = this;
     const patternId = config.id ? config.id : "pattern-" + Math.ceil(Math.random() * 1000);
     this.repeatInd = config.repeat ? config.repeat : "repeat";
-    if (self.ENV === "NODE") {
-        selfSelf.pattern = canvasLayer({}, height, width);
-    }
+    
+    selfSelf.pattern = canvasLayer({}, height, width);
 
     selfSelf.pattern.setAttr("id", patternId);
     self.prependChild([selfSelf.pattern]);
@@ -410,13 +408,16 @@ CanvasDom.prototype = {
 function imageInstance(self) {
     const imageIns = new Image();
     imageIns.crossOrigin = "anonymous";
-
+    imageIns.dataMode = Image.MODE_MIME | Image.MODE_IMAGE
+    // console.log(self.ctx.type_);
     imageIns.onload = function onload() {
-        self.attr.height = self.attr.height ? self.attr.height : this.height;
-        self.attr.width = self.attr.width ? self.attr.width : this.width;
-        self.imageObj = this;
+        self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+        self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
+        self.imageObj = imageIns;
 
         if (self.nodeExe.attr.onload && typeof self.nodeExe.attr.onload === "function") {
+            // console.log(self);
+            // console.log(self.nodeExe);
             self.nodeExe.attr.onload.call(self.nodeExe, self.image);
         }
 
@@ -440,6 +441,7 @@ function RenderImage(ctx, props, stylesProps, onloadExe, onerrorExe, nodeExe) {
     self.style = stylesProps;
     self.nodeName = "Image";
     self.nodeExe = nodeExe;
+    nodeExe.dom = this;
 
     for (const key in props) {
         this.setAttr(key, props[key]);
@@ -505,6 +507,7 @@ RenderImage.prototype.execute = function RIexecute() {
     const { width = 0, height = 0, x = 0, y = 0 } = this.attr;
 
     if (this.imageObj) {
+        // console.log(this.imageObj);
         // this.ctx.drawImage(this.rImageObj ? this.rImageObj.canvas : this.imageObj, x, y, width, height);
         this.ctx.drawImage(this.imageObj, x, y, width, height);
     }
@@ -1449,6 +1452,8 @@ CanvasNodeExe.prototype.setAttr = function CsetAttr(attr, value) {
         } else {
             this.attr[attr] = value;
         }
+        // console.log(this);
+        // console.log(this.dom);
         this.dom.setAttr(attr, value);
     } else if (arguments.length === 1 && typeof attr === "object") {
         const keys = Object.keys(attr);
@@ -1750,22 +1755,24 @@ GetCanvasImgInstance.prototype.setAttr = function (attr, value) {
 function textureImageInstance(self, url) {
     const imageIns = new Image();
     imageIns.crossOrigin = "anonymous";
+    imageIns.dataMode = Image.MODE_MIME | Image.MODE_IMAGE;
     imageIns.src = url;
     if (!self) {
         return imageIns;
     }
+    
     imageIns.onload = function onload() {
         if (!self) {
             return;
         }
         if (self.attr) {
-            self.attr.height = self.attr.height ? self.attr.height : this.naturalHeight;
-            self.attr.width = self.attr.width ? self.attr.width : this.naturalWidth;
+            self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+            self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
         }
         if (self instanceof RenderTexture) {
             self.setSize(self.attr.width, self.attr.height);
         }
-        self.imageObj = this;
+        self.imageObj = imageIns;
 
         if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
             self.attr.onload.call(self, self.image);
@@ -1961,158 +1968,207 @@ RenderTexture.prototype.next = function (index) {
     postProcess(this);
 };
 
+function createPage (ctx) {
+        let onChangeExe;
+        const root = new CanvasNodeExe(
+            ctx,
+            {
+                el: "g",
+                attr: {
+                    id: "rootNode",
+                },
+            },
+            domId(),
+            999
+        );
+        root.ENV = "NODE";
+        const execute = root.execute.bind(root);
+        const ratio = getPixlRatio(ctx);
+        let onClear = function (ctx, width, height) {
+            ctx.clearRect(0, 0, width * ratio, height * ratio);
+        };
+
+        root.setClear = function (exe) {
+            onClear = exe;
+        };
+
+        root.onChange = function (exec) {
+            onChangeExe = exec;
+        };
+
+        root.getPixels = function (x, y, width_, height_) {
+            return this.ctx.getImageData(x, y, width_, height_);
+        };
+
+        root.putPixels = function (imageData, x, y) {
+            return this.ctx.putImageData(imageData, x, y);
+        };
+
+        root.clear = function () {
+            onClear(this.ctx, this.width, this.height);
+        };
+
+        root.addPage = function () {
+            ctx.addPage();
+        }
+
+        root.setContext = function (prop, value) {
+            /** Expecting value to be array if multiple aruments */
+            if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
+                this.ctx[prop].apply(null, value);
+            } else if (this.ctx[prop]) {
+                this.ctx[prop] = value;
+            }
+        };
+
+        root.setSize = function (width_, height_) {
+            // width = width_;
+            // height = height_;
+            this.domEl = new Canvas(width_, height_, "pdf");
+            ctx = this.domEl.getContext("2d", config);
+            ctx.type_ = "pdf";
+            this.width = width_;
+            this.height = height_;
+            this.ctx = ctx;
+            this.execute();
+        };
+
+        root.execute = function executeExe() {
+            onClear(ctx, this.width, this.height);
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            this.updateBBox();
+            execute();
+            if (onChangeExe && this.stateModified) {
+                onChangeExe();
+            }
+            this.stateModified = false;
+        };
+
+        root.update = function executeUpdate() {
+            this.execute();
+        };
+
+        root.toDataURL = function (p) {
+            return this.domEl.toDataURL(p);
+        };
+
+        root.getPixels = function (x, y, width_, height_) {
+            const imageData = this.ctx.getImageData(x, y, width_, height_);
+            const pixelInstance = new PixelObject(imageData, width_, height_);
+
+            return pixelInstance;
+        };
+
+        root.putPixels = function (Pixels, x, y) {
+            if (!(Pixels instanceof PixelObject)) {
+                return;
+            }
+            return this.ctx.putImageData(Pixels.imageData, x, y);
+        };
+
+        root.clear = function () {
+            onClear();
+        };
+
+        root.createTexture = function (config) {
+            return new RenderTexture(this, config);
+        };
+
+        root.createAsyncTexture = function (config) {
+            return new Promise((resolve, reject) => {
+                const textureInstance = new RenderTexture(this, config);
+                textureInstance.onLoad(function () {
+                    resolve(textureInstance);
+                });
+            });
+        };
+
+        root.setContext = function (prop, value) {
+            /** Expecting value to be array if multiple aruments */
+            if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
+                this.ctx[prop].apply(null, value);
+            } else if (this.ctx[prop]) {
+                this.ctx[prop] = value;
+            }
+        };
+
+        root.createPattern = createCanvasPattern;
+
+        root.createClip = createCanvasClip;
+
+        root.createMask = createCanvasMask;
+
+        return root;
+    }
+
+function pdfLayer(config, height = 0, width = 0) {
+    const layer = createCanvas(width, height, "pdf");
+    let ctx = layer.getContext("2d", config);
+    const ratio = getPixlRatio(ctx);
+    ctx.type_ = "pdf";
+
+    function PDFCreator() {
+        this.pages = [];
+        this.ctx = ctx;
+        this.domEl = layer;
+    }
+    PDFCreator.prototype.clear = function () {
+        this.pages.forEach(function (page) {
+            page.clear();
+        });
+    }
+    PDFCreator.prototype.execute = function () {
+        let self = this;
+        this.pages.forEach(function (page, i) {
+            self.ctx.save();
+            if (i !== 0) {
+                page.addPage();
+            }
+            page.execute();
+            self.ctx.restore();
+        })
+    }
+    PDFCreator.prototype.addPage = function () {
+        let newpage = createPage(ctx);
+        newpage.domEl = layer;
+        newpage.height = height;
+        newpage.width = width;
+        newpage.type = "CANVAS";
+        newpage.EXEType = "pdf";
+        newpage.ctx = ctx;
+
+        ctx.textDrawingMode = "glyph";
+        this.pages.push(newpage);
+        return newpage;
+    }
+    PDFCreator.prototype.exportPdf = function (metaData = {
+          title: 'I2DJs Pdf',
+          keywords: 'I2Djs pdf generator demo, canvas',
+          creationDate: new Date()
+        }) {
+
+        return this.domEl.toBuffer('application/pdf', metaData);
+    }
+
+    return new PDFCreator(ctx);
+}
+
 function canvasLayer(config, height = 0, width = 0) {
-    // if (!Canvas) {
-    //     console.error("Canvas missing from node");
-    //     console.error('Install "Canvas" "canvas-5-polyfill" node modules');
-    //     console.error('Make "Canvas" "Image" "Path2D" objects global from the above modules');
-    //     return;
-    // }
     let onChangeExe;
     const layer = createCanvas(width, height);
     let ctx = layer.getContext("2d", config);
     const ratio = getPixlRatio(ctx);
-    let onClear = function (ctx) {
-        ctx.clearRect(0, 0, width * ratio, height * ratio);
-    };
-    const vDomInstance = new VDom();
-    const vDomIndex = queueInstance.addVdom(vDomInstance);
-    const root = new CanvasNodeExe(
-        ctx,
-        {
-            el: "g",
-            attr: {
-                id: "rootNode",
-            },
-        },
-        domId(),
-        vDomIndex
-    );
-    vDomInstance.rootNode(root);
-    const execute = root.execute.bind(root);
-    root.domEl = layer;
-    root.height = height;
-    root.width = width;
-    root.type = "CANVAS";
-    root.ENV = "NODE";
-
-    root.setClear = function (exe) {
-        onClear = exe;
-    };
-
-    root.onChange = function (exec) {
-        onChangeExe = exec;
-    };
-
-    root.getPixels = function (x, y, width_, height_) {
-        return this.ctx.getImageData(x, y, width_, height_);
-    };
-
-    root.putPixels = function (imageData, x, y) {
-        return this.ctx.putImageData(imageData, x, y);
-    };
-
-    root.clear = function () {
-        onClear();
-    };
-
-    root.setContext = function (prop, value) {
-        /** Expecting value to be array if multiple aruments */
-        if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
-            this.ctx[prop].apply(null, value);
-        } else if (this.ctx[prop]) {
-            this.ctx[prop] = value;
-        }
-    };
-
-    root.setSize = function (width_, height_) {
-        // cHeight = height_;
-        // cWidth = width_;
-        width = width_;
-        height = height_;
-        this.domEl = new Canvas(width, height);
-        ctx = this.domEl.getContext("2d", config);
-        this.width = width;
-        this.height = height;
-        this.ctx = ctx;
-        this.execute();
-    };
-
-    root.execute = function () {
-        onClear(ctx);
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        root.updateBBox();
-        execute();
-    };
-
-    root.execute = function executeExe() {
-        onClear(ctx);
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        this.updateBBox();
-        execute();
-        if (onChangeExe && this.stateModified) {
-            onChangeExe();
-        }
-        this.stateModified = false;
-    };
-
-    root.update = function executeUpdate() {
-        this.execute();
-    };
-
-    root.toDataURL = function (p) {
-        return this.domEl.toDataURL(p);
-    };
-
-    root.getPixels = function (x, y, width_, height_) {
-        const imageData = this.ctx.getImageData(x, y, width_, height_);
-        const pixelInstance = new PixelObject(imageData, width_, height_);
-
-        return pixelInstance;
-    };
-
-    root.putPixels = function (Pixels, x, y) {
-        if (!(Pixels instanceof PixelObject)) {
-            return;
-        }
-        return this.ctx.putImageData(Pixels.imageData, x, y);
-    };
-
-    root.clear = function () {
-        onClear();
-    };
-
-    root.createTexture = function (config) {
-        return new RenderTexture(this, config);
-    };
-
-    root.createAsyncTexture = function (config) {
-        return new Promise((resolve, reject) => {
-            const textureInstance = new RenderTexture(this, config);
-            textureInstance.onLoad(function () {
-                resolve(textureInstance);
-            });
-        });
-    };
-
-    root.setContext = function (prop, value) {
-        /** Expecting value to be array if multiple aruments */
-        if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
-            this.ctx[prop].apply(null, value);
-        } else if (this.ctx[prop]) {
-            this.ctx[prop] = value;
-        }
-    };
-
-    root.createPattern = createCanvasPattern;
-
-    root.createClip = createCanvasClip;
-
-    root.createMask = createCanvasMask;
+    let root = createPage(ctx);
+        root.domEl = layer;
+        root.height = height;
+        root.width = width;
+        root.type = "CANVAS";
+        root.ctx = ctx;
 
     return root;
 }
 
 export default {
     canvasLayer,
+    pdfLayer
 };
