@@ -1,5 +1,5 @@
 /*!
-      * node-i2djs v1.0.1
+      * node-i2djs v1.1.0
       * (c) 2022 Narayana swamy (narayanaswamy14@gmail.com)
       * @license BSD-3-Clause
       */
@@ -4525,8 +4525,7 @@ CollectionPrototype.prototype.wrapper = function wrapper(nodes) {
 var ref = require('canvas');
 var createCanvas = ref.createCanvas;
 var Image = ref.Image;
-var ref$1 = require("canvas-5-polyfill");
-var Path2D = ref$1.Path2D;
+require("canvas-5-polyfill");
 var t2DGeometry = geometry;
 var queueInstance = queue;
 var Id = 0;
@@ -5098,14 +5097,14 @@ RenderText.prototype.fitWidth = function () {
         var strLit = "";
         var i = 0;
         while(i < textLits.length) {
-            if (this.ctx.measureText(strLit + " " + textLits[i]).width < width) {
+            if (i !== 0) {
+                strLit += " ";
+            }
+            if (this.ctx.measureText(strLit + textLits[i]).width < width) {
                 strLit = strLit + textLits[i];
             } else {
                 textSubStrs.push(strLit);
                 strLit = textLits[i];
-            }
-            if (i !== 0) {
-                strLit += " ";
             }
             i++;
         }
@@ -5564,7 +5563,6 @@ function polygonExe(points) {
     if (points && points.length === 0) {
         return;
     }
-
     var polygon = new Path2D();
     polygon.moveTo(points[0].x, points[0].y);
     for (var i = 1; i < points.length; i++) {

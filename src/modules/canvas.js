@@ -6,7 +6,7 @@ import colorMap from "./colorMap.js";
 import Events from "./events.js";
 import behaviour from "./behaviour.js";
 const { createCanvas, Image } = require('canvas');
-const { Path2D } = require("canvas-5-polyfill");
+require("canvas-5-polyfill");
 
 import {
     NodePrototype,
@@ -544,14 +544,14 @@ RenderText.prototype.fitWidth = function () {
         let strLit = "";
         let i = 0;
         while(i < textLits.length) {
-            if (this.ctx.measureText(strLit + " " + textLits[i]).width < width) {
+            if (i !== 0) {
+                strLit += " "
+            }
+            if (this.ctx.measureText(strLit + textLits[i]).width < width) {
                 strLit = strLit + textLits[i];
             } else {
                 textSubStrs.push(strLit);
                 strLit = textLits[i];
-            }
-            if (i !== 0) {
-                strLit += " "
             }
             i++;
         }
@@ -962,7 +962,6 @@ function polygonExe(points) {
     if (points && points.length === 0) {
         return;
     }
-
     const polygon = new Path2D();
     polygon.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i++) {

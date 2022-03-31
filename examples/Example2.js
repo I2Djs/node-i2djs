@@ -103,6 +103,19 @@
 			}
 		});
 
+		page1.createEl({
+			el: "polygon",
+			attr: {
+				transform: {
+					translate: [200, 410]
+				},
+				points: [{x: 100, y: 100}, {x: 100, y: 0}, {x: 0, y: 100}]
+			},
+			style: {
+				fillStyle: "#0075F3"
+			}
+		});
+
 		PDFInstance.execute();
 
 		fs.writeFileSync((process.cwd() + "/examples/example2.pdf"), PDFInstance.exportPdf(), err => {
