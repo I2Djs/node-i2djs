@@ -42,7 +42,7 @@
 				x: 30,
 				y: 200,
 				width: (210 * 3 - 80) * 0.5,
-				height: 100,
+				height: 150,
 				rx: 10,
 				ry: 10
 			},
@@ -63,7 +63,7 @@
 			},
 			style: {
 				strokeStyle: "#000000",
-				font: "8px Arial",
+				font: "10px Arial",
 				textAlign: "left",
 				"word-wrap": "break-word",
 			}
@@ -75,7 +75,7 @@
 				x: 40 + (210 * 3 - 80) / 2,
 				y: 200,
 				width: (210 * 3 - 80) * 0.5,
-				height: 100,
+				height: 150,
 				rx: 10,
 				ry: 10
 			},
@@ -97,7 +97,7 @@
 			},
 			style: {
 				strokeStyle: "#000000",
-				font: "8px Arial",
+				font: "10px Arial",
 				textAlign: "left",
 				"word-wrap": "break-word",
 			}
