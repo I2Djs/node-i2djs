@@ -1,5 +1,5 @@
 /*!
-      * node-i2djs v1.1.0
+      * node-i2djs v1.1.1
       * (c) 2022 Narayana swamy (narayanaswamy14@gmail.com)
       * @license BSD-3-Clause
       */
@@ -5092,25 +5092,35 @@ RenderText.prototype.fitWidth = function () {
             this.ctx.font = this.style.font;
         }
         var width = this.attr.width;
-        var textLits = this.attr.text.split(" ");
+        var textListByLine = this.attr.text.split("\n");
         var textSubStrs = [];
         var strLit = "";
         var i = 0;
-        while(i < textLits.length) {
+        var textList = textListByLine.reduce(function (p, c) {
+            p.push("\n");
+            p = p.concat(c.split(" "));
+            return p;
+        }, []);
+        while(i < textList.length) {
             if (i !== 0) {
                 strLit += " ";
             }
-            if (this.ctx.measureText(strLit + textLits[i]).width < width) {
-                strLit = strLit + textLits[i];
-            } else {
+            if (textList[i] === "\n") {
                 textSubStrs.push(strLit);
-                strLit = textLits[i];
+                strLit = " ";
+            } else {
+                if (this.ctx.measureText(strLit + textList[i]).width < width) {
+                    strLit = strLit + textList[i];
+                } else {
+                    textSubStrs.push(strLit);
+                    strLit = textList[i];
+                }
             }
             i++;
         }
         textSubStrs.push(strLit);
 
-        this.textLits = textSubStrs;
+        this.textList = textSubStrs;
 };
 
 RenderText.prototype.text = function RTtext(value) {
@@ -5139,9 +5149,9 @@ RenderText.prototype.updateBBox = function RTupdateBBox() {
         height = parseInt(this.style.font.replace(/[^\d.]/g, ""), 10) || 1;
         self.textHeight = height + 3;
     }
-    if (this.attr.width && this.textLits && this.textLits.length > 0) {
+    if (this.attr.width && this.textList && this.textList.length > 0) {
         width = this.attr.width;
-        height = height * this.textLits.length;
+        height = height * this.textList.length;
     } else {
         width = this.ctx.measureText(this.attr.text).width;
     }
@@ -5173,14 +5183,14 @@ RenderText.prototype.updateBBox = function RTupdateBBox() {
 
 RenderText.prototype.execute = function RTexecute() {
     if (this.attr.text !== undefined && this.attr.text !== null) {
-        if (this.textLits && this.textLits.length > 0) {
-            for (var i = 0; i < this.textLits.length; i++) {
+        if (this.textList && this.textList.length > 0) {
+            for (var i = 0; i < this.textList.length; i++) {
                 if (this.ctx.fillStyle !== "#000000") {
-                    this.ctx.fillText(this.textLits[i], this.attr.x, this.attr.y + this.textHeight * (i + 1) );
+                    this.ctx.fillText(this.textList[i], this.attr.x, this.attr.y + this.textHeight * (i + 1) );
                 }
 
                 if (this.ctx.strokeStyle !== "#000000") {
-                    this.ctx.strokeText(this.textLits[i], this.attr.x, this.attr.y + this.textHeight * (i + 1));
+                    this.ctx.strokeText(this.textList[i], this.attr.x, this.attr.y + this.textHeight * (i + 1));
                 }
             }
         } else {
