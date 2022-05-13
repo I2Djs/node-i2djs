@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-	let { canvasPdfLayer } = require("./../dist/i2d.js");
+	let { canvasPdfLayer } = require("./../dist/node-i2d.js");
 	const fs = require('fs');
 	var path = require('path');
 
@@ -21,20 +21,20 @@
             });
 
 		page1.exec(renderRemplate);
-		page1.createEl({
-			el: "image",
-			attr: {
-				x: (210 * 3 * 0.5) - 75,
-				y: 50,
-				src: (process.cwd() + "/examples/images/nodeI2djsLogo.svg"),
-				onload: function () {
-					let width = this.getAttr("width");
-					let height = this.getAttr("height");
-					this.setAttr("width", 150);
-					this.setAttr("height", (height / width) * 150);
-				}
-			}
-		});
+		// page1.createEl({
+		// 	el: "image",
+		// 	attr: {
+		// 		x: (210 * 3 * 0.5) - 75,
+		// 		y: 50,
+		// 		src: (process.cwd() + "/examples/images/nodeI2djsLogo.svg"),
+		// 		onload: function () {
+		// 			let width = this.getAttr("width");
+		// 			let height = this.getAttr("height");
+		// 			this.setAttr("width", 150);
+		// 			this.setAttr("height", (height / width) * 150);
+		// 		}
+		// 	}
+		// });
 
 		page1.createEl({
 			el: "text",
@@ -99,7 +99,7 @@
 
 		PDFInstance.execute();
 
-		fs.writeFileSync((process.cwd() + "/examples/sample.pdf"), PDFInstance.exportPdf(), err => {
+		fs.writeFileSync((process.cwd() + "/examples/example1.pdf"), PDFInstance.exportPdf(), err => {
 		  if (err) {
 		    console.error(err)
 		    return
