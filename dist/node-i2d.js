@@ -4999,15 +4999,6 @@ RenderImage.prototype.setAttr = function RIsetAttr(attr, value) {
             if (self.image.src !== value) {
                 self.image.src = value;
             }
-        } else if (
-            value instanceof HTMLImageElement ||
-            value instanceof SVGImageElement ||
-            value instanceof HTMLCanvasElement
-        ) {
-            self.imageObj = value;
-            // self.postProcess();
-            self.attr.height = self.attr.height ? self.attr.height : value.height;
-            self.attr.width = self.attr.width ? self.attr.width : value.width;
         } else if (value instanceof CanvasNodeExe || value instanceof RenderTexture) {
             self.imageObj = value.domEl;
             // self.postProcess();
@@ -6456,11 +6447,11 @@ function GetCanvasImgInstance(width, height) {
 }
 
 GetCanvasImgInstance.prototype.setAttr = function (attr, value) {
-    if (attr === "height") {
-        this.canvas.setAttribute("height", value);
-    } else if (attr === "width") {
-        this.canvas.setAttribute("width", value);
-    }
+    // if (attr === "height") {
+    //     this.canvas.setAttribute("height", value);
+    // } else if (attr === "width") {
+    //     this.canvas.setAttribute("width", value);
+    // }
 };
 
 function textureImageInstance(self, url) {
@@ -6568,7 +6559,8 @@ function RenderTexture(nodeExe, config) {
     self.nodeExe = nodeExe;
 
     for (var key in self.attr) {
-        self.setAttr(key, self.attr[key]);
+        if (key !== "height" && key !== "width")
+            { self.setAttr(key, self.attr[key]); }
     }
 
     queueInstance.vDomChanged(nodeExe.vDomIndex);
@@ -6619,15 +6611,6 @@ RenderTexture.prototype.setAttr = function RSsetAttr(attr, value) {
             if (self.image.src !== value) {
                 self.image.src = value;
             }
-        } else if (
-            value instanceof HTMLImageElement ||
-            value instanceof SVGImageElement ||
-            value instanceof HTMLCanvasElement
-        ) {
-            self.imageObj = value;
-            self.attr.height = self.attr.height ? self.attr.height : value.height;
-            self.attr.width = self.attr.width ? self.attr.width : value.width;
-            postProcess(self);
         } else if (value instanceof CanvasNodeExe || value instanceof RenderTexture) {
             self.imageObj = value.domEl;
             self.attr.height = self.attr.height ? self.attr.height : value.attr.height;
@@ -6747,7 +6730,7 @@ function createPage (ctx) {
         root.setSize = function (width_, height_) {
             // width = width_;
             // height = height_;
-            this.domEl = new Canvas(width_, height_, "pdf");
+            this.domEl = createCanvas(width_, height_, "pdf");
             ctx = this.domEl.getContext("2d", config);
             ctx.type_ = "pdf";
             this.width = width_;
@@ -6878,6 +6861,17 @@ function pdfLayer(config, height, width) {
 
 
         return this.domEl.toBuffer('application/pdf', metaData);
+    };
+    PDFCreator.prototype.exec = function (exe) {
+        exe.call(this, this.dataObj);
+    };
+    PDFCreator.prototype.data = function (data) {
+        if (!data) {
+            return this.dataObj;
+        } else {
+            this.dataObj = data;
+        }
+        return this;
     };
 
     return new PDFCreator(ctx);
