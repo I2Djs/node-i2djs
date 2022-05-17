@@ -5088,8 +5088,8 @@ RenderText.prototype.fitWidth = function () {
         var strLit = "";
         var i = 0;
         var textList = textListByLine.reduce(function (p, c) {
-            p.push("\n");
             p = p.concat(c.split(" "));
+            p.push("\n");
             return p;
         }, []);
         while(i < textList.length) {
