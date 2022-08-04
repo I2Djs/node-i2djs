@@ -4,12 +4,12 @@ import commonjs from "@rollup/plugin-commonjs";
 // import { terser } from "rollup-plugin-terser";
 import buble from "@rollup/plugin-buble";
 
-const version = process.env.VERSION || require("./package.json").version;
+// const version = process.env.VERSION || require("./package.json").version;
 const author = require("./package.json").author;
 const license = require("./package.json").license;
 
 const banner = `/*!
-      * node-i2djs v${version}
+      * node-i2djs
       * (c) ${new Date().getFullYear()} ${author} (narayanaswamy14@gmail.com)
       * @license ${license}
       */`;

@@ -1,10 +1,7 @@
-import queue from "./queue.js";
-import VDom from "./VDom.js";
+
 import path from "./path.js";
 import geometry from "./geometry.js";
 import colorMap from "./colorMap.js";
-import Events from "./events.js";
-import behaviour from "./behaviour.js";
 const { createCanvas, Image } = require('canvas');
 require("canvas-5-polyfill");
 
@@ -13,12 +10,7 @@ import {
     CollectionPrototype,
 } from "./coreApi.js";
 const t2DGeometry = geometry;
-const queueInstance = queue;
 let Id = 0;
-
-const zoomInstance = behaviour.zoom();
-const dragInstance = behaviour.drag();
-// let touchInstance = behaviour.touch();
 
 function domId() {
     Id += 1;
@@ -422,7 +414,6 @@ function imageInstance(self) {
         }
 
         self.nodeExe.BBoxUpdate = true;
-        queueInstance.vDomChanged(self.nodeExe.vDomIndex);
     };
 
     imageIns.onerror = function onerror(error) {
@@ -447,7 +438,6 @@ function RenderImage(ctx, props, stylesProps, onloadExe, onerrorExe, nodeExe) {
         this.setAttr(key, props[key]);
     }
 
-    queueInstance.vDomChanged(nodeExe.vDomIndex);
     self.stack = [self];
 }
 
@@ -471,8 +461,6 @@ RenderImage.prototype.setAttr = function RIsetAttr(attr, value) {
         }
     }
     this.attr[attr] = value;
-
-    queueInstance.vDomChanged(this.nodeExe.vDomIndex);
 };
 
 RenderImage.prototype.updateBBox = function RIupdateBBox() {
@@ -1455,7 +1443,6 @@ CanvasNodeExe.prototype.remove = function Cremove() {
     }
 
     this.dom.parent.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
 };
 
 CanvasNodeExe.prototype.attributesExe = function CattributesExe() {
@@ -1481,7 +1468,6 @@ CanvasNodeExe.prototype.setStyle = function CsetStyle(attr, value) {
         }
     }
 
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -1517,7 +1503,6 @@ CanvasNodeExe.prototype.setAttr = function CsetAttr(attr, value) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -1534,7 +1519,6 @@ CanvasNodeExe.prototype.rotate = function Crotate(angle, x, y) {
 
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -1550,7 +1534,6 @@ CanvasNodeExe.prototype.scale = function Cscale(XY) {
     this.attr.transform.scale = [XY[0], XY[1] ? XY[1] : XY[0]];
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -1562,7 +1545,6 @@ CanvasNodeExe.prototype.translate = function Ctranslate(XY) {
     this.attr.transform.translate = XY;
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -1577,7 +1559,6 @@ CanvasNodeExe.prototype.skewX = function CskewX(x) {
     this.attr.transform.skew[0] = x;
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -1592,7 +1573,6 @@ CanvasNodeExe.prototype.skewY = function CskewY(y) {
     this.attr.transform.skew[1] = y;
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -1625,7 +1605,6 @@ CanvasNodeExe.prototype.prependChild = function child(childrens) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return self;
 };
 
@@ -1643,7 +1622,6 @@ CanvasNodeExe.prototype.child = function child(childrens) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return self;
 };
 
@@ -1670,37 +1648,6 @@ CanvasNodeExe.prototype.in = function Cinfun(co) {
     return this.dom.in(co);
 };
 
-CanvasNodeExe.prototype.on = function Con(eventType, hndlr) {
-    const self = this;
-    // this.dom.on(eventType, hndlr);
-    if (!this.events) {
-        this.events = {};
-    }
-
-    if (!hndlr && this.events[eventType]) {
-        delete this.events[eventType];
-    } else if (hndlr) {
-        if (typeof hndlr === "function") {
-            const hnd = hndlr.bind(self);
-            this.events[eventType] = function (event) {
-                hnd(event);
-            };
-        } else if (typeof hndlr === "object") {
-            this.events[eventType] = hndlr;
-            if (
-                hndlr.constructor === zoomInstance.constructor ||
-                hndlr.constructor === dragInstance.constructor
-            ) {
-                hndlr.bindMethods(this);
-            }
-        }
-    }
-
-    return this;
-};
-
-CanvasNodeExe.prototype.animatePathTo = path.animatePathTo;
-CanvasNodeExe.prototype.morphTo = path.morphTo;
 CanvasNodeExe.prototype.vDomIndex = null;
 
 CanvasNodeExe.prototype.createRadialGradient = createRadialGradient;
@@ -1718,7 +1665,6 @@ CanvasNodeExe.prototype.createEls = function CcreateEls(data, config) {
         this.vDomIndex
     );
     this.child(e.stack);
-    queueInstance.vDomChanged(this.vDomIndex);
     return e;
 };
 
@@ -1727,14 +1673,12 @@ CanvasNodeExe.prototype.text = function Ctext(value) {
         this.dom.text(value);
     }
 
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
 CanvasNodeExe.prototype.createEl = function CcreateEl(config) {
     const e = new CanvasNodeExe(this.dom.ctx, config, domId(), this.vDomIndex);
     this.child([e]);
-    queueInstance.vDomChanged(this.vDomIndex);
     return e;
 };
 
@@ -1752,7 +1696,6 @@ CanvasNodeExe.prototype.removeChild = function CremoveChild(obj) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
 };
 
 CanvasNodeExe.prototype.getBBox = function () {
@@ -1857,7 +1800,6 @@ function postProcess(self) {
     if (self.attr && self.attr.filter) {
         filterExec(self);
     }
-    queueInstance.vDomChanged(self.nodeExe.vDomIndex);
 }
 
 function clipExec(self) {
@@ -1899,7 +1841,6 @@ function RenderTexture(nodeExe, config = {}) {
             self.setAttr(key, self.attr[key]);
     }
 
-    queueInstance.vDomChanged(nodeExe.vDomIndex);
     // self.stack = [self];
 }
 RenderTexture.prototype = new NodePrototype();

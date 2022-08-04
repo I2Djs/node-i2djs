@@ -15,7 +15,7 @@
     "Node",
     "Canvas",
     "Graphics",
-    "I2djs",
+    "node-i2djs",
     "visualization"
   ],
   "author": "Narayana swamy",
@@ -25,10 +25,8 @@
   },
   "homepage": "https://github.com/I2Djs/node-i2djs#readme",
   "dependencies": {
-    "@juggle/resize-observer": "^3.3.1",
     "canvas": "^2.9.0",
-    "canvas-5-polyfill": "^0.1.5",
-    "flubber": "^0.4.2"
+    "canvas-5-polyfill": "^0.1.5"
   },
   "devDependencies": {
     "@rbnlffl/rollup-plugin-eslint": "^3.0.0",

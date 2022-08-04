@@ -1,318 +1,11 @@
 /*!
-      * node-i2djs v1.1.1
+      * node-i2djs
       * (c) 2022 Narayana swamy (narayanaswamy14@gmail.com)
       * @license BSD-3-Clause
       */
 'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
-
-var flubber = require('flubber');
-
-/* eslint-disable no-undef */
-var animatorInstance = null;
-var tweens = [];
-var vDoms = {};
-var vDomIds = [];
-var animeFrameId;
-var onFrameExe = [];
-
-if (typeof window === "undefined") {
-    global.window = {
-        setTimeout: setTimeout,
-        clearTimeout: clearTimeout,
-    };
-    global.performance = {
-        now: function () {
-            return Date.now();
-        },
-    };
-    global.document = {};
-}
-window.requestAnimationFrame = (function requestAnimationFrameG() {
-    return (
-        window.requestAnimationFrame ||
-        window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame ||
-        window.oRequestAnimationFrame ||
-        window.msRequestAnimationFrame ||
-        function requestAnimationFrame(callback, element) {
-            return window.setTimeout(callback, 1000 / 60);
-        }
-    );
-})();
-
-window.cancelAnimFrame = (function cancelAnimFrameG() {
-    return (
-        window.cancelAnimationFrame ||
-        window.webkitCancelAnimationFrame ||
-        window.mozCancelAnimationFrame ||
-        window.oCancelAnimationFrame ||
-        window.msCancelAnimationFrame ||
-        function cancelAnimFrame(id) {
-            return window.clearTimeout(id);
-        }
-    );
-})();
-
-function Tween(Id, executable, easying) {
-    this.executable = executable;
-    this.duration = executable.duration ? executable.duration : 0;
-    this.delay = executable.delay ? executable.delay : 0;
-    this.lastTime = 0 - (executable.delay ? executable.delay : 0);
-    this.loopTracker = 0;
-    this.loop = executable.loop ? executable.loop : 0;
-    this.direction = executable.direction;
-    this.easying = easying;
-    this.end = executable.end ? executable.end : null;
-
-    if (this.direction === "reverse") {
-        this.factor = 1;
-    } else {
-        this.factor = 0;
-    }
-}
-
-Tween.prototype.execute = function execute(f) {
-    this.executable.run(f);
-};
-
-Tween.prototype.resetCallBack = function resetCallBack(_) {
-    if (typeof _ !== "function") { return; }
-    this.callBack = _;
-}; // function endExe (_) {
-//   this.endExe = _
-//   return this
-// }
-
-function onRequestFrame(_) {
-    if (typeof _ !== "function") {
-        throw new Error("Wrong input");
-    }
-
-    onFrameExe.push(_);
-
-    if (onFrameExe.length > 0 && !animeFrameId) {
-        this.startAnimeFrames();
-    }
-}
-
-function removeRequestFrameCall(_) {
-    if (typeof _ !== "function") {
-        throw new Error("Wrong input");
-    }
-
-    var index = onFrameExe.indexOf(_);
-
-    if (index !== -1) {
-        onFrameExe.splice(index, 1);
-    }
-}
-
-function add(uId, executable, easying) {
-    var exeObj = new Tween(uId, executable, easying);
-    exeObj.currTime = performance.now();
-    if (executable.target) {
-        if (!executable.target.animList) {
-            executable.target.animList = [];
-        }
-        executable.target.animList[executable.target.animList.length] = exeObj;
-    }
-    tweens[tweens.length] = exeObj;
-    this.startAnimeFrames();
-}
-
-function remove$1(exeObj) {
-    var index = tweens.indexOf(exeObj);
-    if (index !== -1) {
-        tweens.splice(index, 1);
-    }
-}
-
-function startAnimeFrames() {
-    if (!animeFrameId) {
-        animeFrameId = window.requestAnimationFrame(exeFrameCaller);
-    }
-}
-
-function stopAnimeFrame() {
-    if (animeFrameId) {
-        window.cancelAnimFrame(animeFrameId);
-        animeFrameId = null;
-    }
-}
-
-function ExeQueue() {}
-
-ExeQueue.prototype = {
-    startAnimeFrames: startAnimeFrames,
-    stopAnimeFrame: stopAnimeFrame,
-    add: add,
-    remove: remove$1,
-    // end: endExe,
-    onRequestFrame: onRequestFrame,
-    removeRequestFrameCall: removeRequestFrameCall,
-    clearAll: function () {
-        tweens = [];
-        onFrameExe = []; // if (this.endExe) { this.endExe() }
-        // this.stopAnimeFrame()
-    },
-};
-
-ExeQueue.prototype.addVdom = function AaddVdom(_) {
-    var ind = vDomIds.length + 1;
-    vDoms[ind] = _;
-    vDomIds.push(ind);
-    this.startAnimeFrames();
-    return ind;
-};
-
-ExeQueue.prototype.removeVdom = function removeVdom(_) {
-    var index = vDomIds.indexOf(_);
-
-    if (index !== -1) {
-        vDomIds.splice(index, 1);
-        vDoms[_].root.destroy();
-        delete vDoms[_];
-    }
-
-    if (vDomIds.length === 0 && tweens.length === 0 && onFrameExe.length === 0) {
-        this.stopAnimeFrame();
-    }
-};
-
-ExeQueue.prototype.vDomChanged = function AvDomChanged(vDom) {
-    if (vDoms[vDom] && vDoms[vDom].stateModified !== undefined) {
-        vDoms[vDom].stateModified = true;
-        vDoms[vDom].root.stateModified = true;
-    } else if (typeof vDom === "string") {
-        var ids = vDom.split(":");
-        if (vDoms[ids[0]] && vDoms[ids[0]].stateModified !== undefined) {
-            vDoms[ids[0]].stateModified = true;
-            vDoms[ids[0]].root.stateModified = true;
-            var childRootNode = vDoms[ids[0]].root.fetchEl("#" + ids[1]);
-            if (childRootNode) {
-                childRootNode.stateModified = true;
-            }
-        }
-    }
-};
-
-ExeQueue.prototype.execute = function Aexecute() {
-    this.startAnimeFrames();
-};
-
-ExeQueue.prototype.vDomUpdates = function () {
-    for (var i = 0, len = vDomIds.length; i < len; i += 1) {
-        if (vDomIds[i] && vDoms[vDomIds[i]] && vDoms[vDomIds[i]].stateModified) {
-            vDoms[vDomIds[i]].execute();
-            vDoms[vDomIds[i]].stateModified = false;
-            // vDoms[vDomIds[i]].onchange();
-        } else if (
-            vDomIds[i] &&
-            vDoms[vDomIds[i]] &&
-            vDoms[vDomIds[i]].root &&
-            vDoms[vDomIds[i]].root.ENV !== "NODE"
-        ) {
-            var elementExists = document.getElementById(vDoms[vDomIds[i]].root.container.id);
-
-            if (!elementExists) {
-                this.removeVdom(vDomIds[i]);
-            }
-        }
-    }
-};
-
-var d;
-var t;
-var abs$1 = Math.abs;
-var counter = 0;
-var tweensN = [];
-
-function exeFrameCaller() {
-    try {
-        tweensN = [];
-        counter = 0;
-        t = performance.now();
-
-        for (var i = 0; i < tweens.length; i += 1) {
-            d = tweens[i];
-            d.lastTime += t - d.currTime;
-            d.currTime = t;
-
-            if (d.lastTime < d.duration && d.lastTime >= 0) {
-                d.execute(abs$1(d.factor - d.easying(d.lastTime, d.duration)));
-                tweensN[counter++] = d;
-            } else if (d.lastTime > d.duration) {
-                loopCheck(d);
-            } else {
-                tweensN[counter++] = d;
-            }
-        }
-
-        tweens = tweensN;
-
-        if (onFrameExe.length > 0) {
-            onFrameExeFun();
-        }
-
-        animatorInstance.vDomUpdates();
-    } catch (err) {
-        console.error(err);
-    } finally {
-        animeFrameId = window.requestAnimationFrame(exeFrameCaller);
-    }
-}
-
-function loopCheck(d) {
-    if (d.loopTracker >= d.loop - 1) {
-        d.execute(1 - d.factor);
-        if (d.end) {
-            d.end();
-        }
-        if (d.executable.target) {
-            var animList = d.executable.target.animList;
-            if (animList && animList.length > 0) {
-                if (animList.length === 1) {
-                    d.executable.target.animList = [];
-                } else if (animList.length > 1) {
-                    var index = animList.indexOf(d);
-                    if (index !== -1) {
-                        animList.splice(index, 1);
-                    }
-                }
-            }
-        }
-    } else {
-        d.loopTracker += 1;
-        d.lastTime = d.lastTime - d.duration;
-        d.lastTime = d.lastTime % d.duration;
-
-        if (d.direction === "alternate") {
-            d.factor = 1 - d.factor;
-        } else if (d.direction === "reverse") {
-            d.factor = 1;
-        } else {
-            d.factor = 0;
-        }
-
-        d.execute(abs$1(d.factor - d.easying(d.lastTime, d.duration)));
-        tweensN[counter++] = d;
-    }
-}
-
-function onFrameExeFun() {
-    for (var i = 0; i < onFrameExe.length; i += 1) {
-        onFrameExe[i](t);
-    }
-}
-
-animatorInstance = new ExeQueue();
-
-var queue = animatorInstance; // default function animateQueue () {
-//   if (!animatorInstance) { animatorInstance = new ExeQueue() }
-//   return animatorInstance
-// }
 
 /* eslint-disable no-undef */
 var sqrt = Math.sqrt;
@@ -336,18 +29,6 @@ function pw(a, x) {
     return val;
 }
 
-// function angleToRadian (_) {
-//   if (isNaN(_)) { throw new Error('NaN') }
-//   return (Math.PI / 180) * _
-// }
-// function radianToAngle (_) {
-//   if (isNaN(_)) { throw new Error('NaN') }
-//   return (180 / Math.PI) * _
-// }
-// function getAngularDistance (r1, r2) {
-//   if (isNaN(r1 - r2)) { throw new Error('NaN') }
-//   return r1 - r2
-// }
 
 function bezierLength(p0, p1, p2) {
     var a = {};
@@ -369,19 +50,7 @@ function bezierLength(p0, p1, p2) {
     return (
         (A_32 * Sabc + A_2 * B * (Sabc - C_2) + (4 * C * A - B * B) * Math.log(logVal)) / (4 * A_32)
     );
-} // function bezierLengthOld (p0, p1, p2) {
-//   const interval = 0.001
-//   let sum = 0
-//   const bezierTransitionInstance = bezierTransition.bind(null, p0, p1, p2)
-//   // let p1
-//   // let p2
-//   for (let i = 0; i <= 1 - interval; i += interval) {
-//     p1 = bezierTransitionInstance(i)
-//     p2 = bezierTransitionInstance(i + interval)
-//     sum += sqrt(pw((p2.x - p1.x) / interval, 2) + (pw((p2.y - p1.y) / interval, 2))) * interval
-//   }
-//   return sum
-// }
+}
 
 function cubicBezierLength(p0, co) {
     var interval = 0.001;
@@ -830,533 +499,7 @@ Geometry.prototype = {
 var geometry = new Geometry();
 
 /* eslint-disable no-undef */
-
-var t2DGeometry$3 = geometry;
-
-function linear(starttime, duration) {
-    return starttime / duration;
-}
-
-function elastic(starttime, duration) {
-    var decay = 8;
-    var force = 2 / 1000;
-    var t = starttime / duration;
-    return (
-        1 -
-        ((1 - t) * Math.sin(t * duration * force * Math.PI * 2 + Math.PI / 2)) / Math.exp(t * decay)
-    );
-}
-
-function bounce(starttime, duration) {
-    var decay = 10;
-    var t = starttime / duration;
-    var force = t / 100;
-    return (
-        1 -
-        ((1 - t) * Math.abs(Math.sin(t * duration * force * Math.PI * 2 + Math.PI / 2))) /
-            Math.exp(t * decay)
-    );
-}
-
-function easeInQuad(starttime, duration) {
-    var t = starttime / duration;
-    return t * t;
-}
-
-function easeOutQuad(starttime, duration) {
-    var t = starttime / duration;
-    return t * (2 - t);
-}
-
-function easeInOutQuad(starttime, duration) {
-    var t = starttime / duration;
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-}
-
-function easeInCubic(starttime, duration) {
-    var t = starttime / duration;
-    return t2DGeometry$3.pow(t, 3);
-}
-
-function easeOutCubic(starttime, duration) {
-    var t = starttime / duration;
-    t -= 1;
-    return t * t * t + 1;
-}
-
-function easeInOutCubic(starttime, duration) {
-    var t = starttime / duration;
-    return t < 0.5 ? 4 * t2DGeometry$3.pow(t, 3) : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-}
-
-function sinIn(starttime, duration) {
-    var t = starttime / duration;
-    return 1 - Math.cos((t * Math.PI) / 2);
-}
-
-function easeOutSin(starttime, duration) {
-    var t = starttime / duration;
-    return Math.cos((t * Math.PI) / 2);
-}
-
-function easeInOutSin(starttime, duration) {
-    var t = starttime / duration;
-    return (1 - Math.cos(Math.PI * t)) / 2;
-} // function easeInQuart (starttime, duration) {
-//   const t = starttime / duration
-//   return t2DGeometry.pow(t, 4)
-// }
-// function easeOutQuart (starttime, duration) {
-//   let t = starttime / duration
-//   t -= 1
-//   return 1 - t * t2DGeometry.pow(t, 3)
-// }
-// function easeInOutQuart (starttime, duration) {
-//   let t = starttime / duration
-//   t -= 1
-//   return t < 0.5 ? 8 * t2DGeometry.pow(t, 4) : 1 - 8 * t * t2DGeometry.pow(t, 3)
-// }
-
-function fetchTransitionType(_) {
-    var res;
-
-    if (typeof _ === "function") {
-        return function custExe(starttime, duration) {
-            return _(starttime / duration);
-        };
-    }
-
-    switch (_) {
-        case "easeOutQuad":
-            res = easeOutQuad;
-            break;
-
-        case "easeInQuad":
-            res = easeInQuad;
-            break;
-
-        case "easeInOutQuad":
-            res = easeInOutQuad;
-            break;
-
-        case "easeInCubic":
-            res = easeInCubic;
-            break;
-
-        case "easeOutCubic":
-            res = easeOutCubic;
-            break;
-
-        case "easeInOutCubic":
-            res = easeInOutCubic;
-            break;
-
-        case "easeInSin":
-            res = sinIn;
-            break;
-
-        case "easeOutSin":
-            res = easeOutSin;
-            break;
-
-        case "easeInOutSin":
-            res = easeInOutSin;
-            break;
-
-        case "bounce":
-            res = bounce;
-            break;
-
-        case "linear":
-            res = linear;
-            break;
-
-        case "elastic":
-            res = elastic;
-            break;
-
-        default:
-            res = linear;
-    }
-
-    return res;
-}
-
-/* eslint-disable no-undef */
-
-var Id$1 = 0;
-var chainId = 0;
-
-function generateRendererId() {
-    Id$1 += 1;
-    return Id$1;
-}
-
-function generateChainId() {
-    chainId += 1;
-    return chainId;
-}
-
-var easying$1 = fetchTransitionType;
-
-function easeDef(type) {
-    this.easying = easying$1(type);
-    this.transition = type;
-    return this;
-}
-
-function duration(value) {
-    if (arguments.length !== 1) {
-        throw new Error("arguments mis match");
-    }
-
-    this.durationP = value;
-    return this;
-}
-
-function loopValue(value) {
-    if (arguments.length !== 1) {
-        throw new Error("arguments mis match");
-    }
-
-    this.loopValue = value;
-    return this;
-}
-
-function direction(value) {
-    if (arguments.length !== 1) {
-        throw new Error("arguments mis match");
-    }
-
-    this.directionV = value;
-    return this;
-}
-
-function bind(value) {
-    if (arguments.length !== 1) {
-        throw new Error("arguments mis match");
-    }
-
-    this.data = value;
-
-    if (this.data.nodeName === "CANVAS") {
-        this.canvasStack = [];
-    }
-
-    return this;
-}
-
-function callbckExe(exe) {
-    if (typeof exe !== "function") {
-        return null;
-    }
-
-    this.callbckExe = exe;
-    return this;
-}
-
-function reset(value) {
-    this.resetV = value;
-    return this;
-}
-
-function child(exe) {
-    this.end = exe;
-    return this;
-}
-
-function end(exe) {
-    this.endExe = exe;
-    return this;
-}
-
-function commit() {
-    this.start();
-}
-
-function SequenceGroup() {
-    this.queue = queue;
-    this.sequenceQueue = [];
-    this.lengthV = 0;
-    this.currPos = 0;
-    this.ID = generateRendererId();
-    this.loopCounter = 0;
-}
-
-SequenceGroup.prototype = {
-    duration: duration,
-    loop: loopValue,
-    callbck: callbckExe,
-    bind: bind,
-    child: child,
-    ease: easeDef,
-    end: end,
-    commit: commit,
-    reset: reset,
-    direction: direction,
-};
-
-SequenceGroup.prototype.add = function SGadd(value) {
-    var self = this;
-
-    if (!Array.isArray(value) && typeof value !== "function") {
-        value = [value];
-    }
-
-    if (Array.isArray(value)) {
-        value.map(function (d) {
-            self.lengthV += d.length ? d.length : 0;
-            return d;
-        });
-    }
-
-    this.sequenceQueue = this.sequenceQueue.concat(value);
-    return this;
-};
-
-SequenceGroup.prototype.easyingGlobal = function SGeasyingGlobal(completedTime, durationV) {
-    return completedTime / durationV;
-};
-
-SequenceGroup.prototype.start = function SGstart() {
-    var self = this;
-
-    if (self.directionV === "alternate") {
-        self.factor = self.factor ? -1 * self.factor : 1;
-        self.currPos = self.factor < 0 ? this.sequenceQueue.length - 1 : 0;
-    } else if (self.directionV === "reverse") {
-        for (var i = 0; i < this.sequenceQueue.length; i += 1) {
-            var currObj = this.sequenceQueue[i];
-
-            if (!(currObj instanceof SequenceGroup) && !(currObj instanceof ParallelGroup)) {
-                currObj.run(1);
-            }
-
-            self.currPos = i;
-        }
-
-        self.factor = -1;
-    } else {
-        self.currPos = 0;
-        self.factor = 1;
-    }
-
-    this.execute();
-};
-
-SequenceGroup.prototype.execute = function SGexecute() {
-    var self = this;
-    var currObj = this.sequenceQueue[self.currPos];
-    currObj = typeof currObj === "function" ? currObj() : currObj;
-
-    if (!currObj) {
-        return;
-    }
-
-    if (currObj instanceof SequenceGroup || currObj instanceof ParallelGroup) {
-        currObj.end(self.triggerEnd.bind(self, currObj)).commit();
-    } else {
-        this.currObj = currObj; // currObj.durationP = tValue
-
-        this.queue.add(
-            generateChainId(),
-            {
-                run: function run(f) {
-                    currObj.run(f);
-                },
-                target: currObj.target,
-                delay: currObj.delay !== undefined ? currObj.delay : 0,
-                duration: currObj.duration !== undefined ? currObj.duration : self.durationP,
-                loop: currObj.loop ? currObj.loop : 1,
-                direction: self.factor < 0 ? "reverse" : "default",
-                end: self.triggerEnd.bind(self, currObj),
-            },
-            function (c, v) { return c / v; }
-        );
-    }
-
-    return this;
-};
-
-SequenceGroup.prototype.triggerEnd = function SGtriggerEnd(currObj) {
-    var self = this;
-    self.currPos += self.factor;
-
-    if (currObj.end) {
-        self.triggerChild(currObj);
-    }
-
-    if (self.sequenceQueue.length === self.currPos || self.currPos < 0) {
-        if (self.endExe) {
-            self.endExe();
-        } // if (self.end) { self.triggerChild(self) }
-
-        self.loopCounter += 1;
-
-        if (self.loopCounter < self.loopValue) {
-            self.start();
-        }
-
-        return;
-    }
-
-    this.execute();
-};
-
-SequenceGroup.prototype.triggerChild = function SGtriggerChild(currObj) {
-    if (currObj.end instanceof ParallelGroup || currObj.end instanceof SequenceGroup) {
-        setTimeout(function () {
-            currObj.end.commit();
-        }, 0);
-    } else {
-        currObj.end(); // setTimeout(() => {
-        //   currObj.childExe.start()
-        // }, 0)
-    }
-};
-
-function ParallelGroup() {
-    this.queue = queue;
-    this.group = [];
-    this.currPos = 0; // this.lengthV = 0
-
-    this.ID = generateRendererId();
-    this.loopCounter = 1; // this.transition = 'linear'
-}
-
-ParallelGroup.prototype = {
-    duration: duration,
-    loop: loopValue,
-    callbck: callbckExe,
-    bind: bind,
-    child: child,
-    ease: easeDef,
-    end: end,
-    commit: commit,
-    direction: direction,
-};
-
-ParallelGroup.prototype.add = function PGadd(value) {
-    var self = this;
-
-    if (!Array.isArray(value)) {
-        value = [value];
-    }
-
-    this.group = this.group.concat(value);
-    this.group.forEach(function (d) {
-        d.durationP = d.durationP ? d.durationP : self.durationP;
-    });
-    return this;
-};
-
-ParallelGroup.prototype.execute = function PGexecute() {
-    var self = this;
-    self.currPos = 0;
-
-    var loop = function ( i, len ) {
-        var currObj = self.group[i];
-
-        if (currObj instanceof SequenceGroup || currObj instanceof ParallelGroup) {
-            currObj // .duration(currObj.durationP ? currObj.durationP : self.durationP)
-                .end(self.triggerEnd.bind(self, currObj))
-                .commit();
-        } else {
-            self.queue.add(
-                generateChainId(),
-                {
-                    run: function run(f) {
-                        currObj.run(f);
-                    },
-                    target: currObj.target,
-                    delay: currObj.delay !== undefined ? currObj.delay : 0,
-                    duration: currObj.duration !== undefined ? currObj.duration : self.durationP,
-                    loop: currObj.loop ? currObj.loop : 1,
-                    direction: currObj.direction ? currObj.direction : "default",
-                    // self.factor < 0 ? 'reverse' : 'default',
-                    end: self.triggerEnd.bind(self, currObj),
-                },
-                currObj.ease ? easying$1(currObj.ease) : self.easying
-            );
-        }
-    };
-
-    for (var i = 0, len = self.group.length; i < len; i++) loop( i);
-
-    return self;
-};
-
-ParallelGroup.prototype.start = function PGstart() {
-    var self = this;
-
-    if (self.directionV === "alternate") {
-        self.factor = self.factor ? -1 * self.factor : 1;
-    } else if (self.directionV === "reverse") {
-        self.factor = -1;
-    } else {
-        self.factor = 1;
-    }
-
-    this.execute();
-};
-
-ParallelGroup.prototype.triggerEnd = function PGtriggerEnd(currObj) {
-    var self = this; // Call child transition wen Entire parallelChain transition completes
-
-    this.currPos += 1;
-
-    if (currObj.end) {
-        this.triggerChild(currObj.end);
-    }
-
-    if (this.currPos === this.group.length) {
-        // Call child transition wen Entire parallelChain transition completes
-        if (this.endExe) {
-            this.triggerChild(this.endExe);
-        } // if (this.end) { this.triggerChild(this.end) }
-
-        self.loopCounter += 1;
-
-        if (self.loopCounter < self.loopValue) {
-            self.start();
-        }
-    }
-};
-
-ParallelGroup.prototype.triggerChild = function PGtriggerChild(exe) {
-    if (exe instanceof ParallelGroup || exe instanceof SequenceGroup) {
-        exe.commit();
-    } else if (typeof exe === "function") {
-        exe();
-    } else {
-        console.log("wrong type");
-    }
-};
-
-function sequenceChain() {
-    return new SequenceGroup();
-}
-
-function parallelChain() {
-    return new ParallelGroup();
-}
-
-var chain = {
-    sequenceChain: sequenceChain,
-    parallelChain: parallelChain,
-};
-
-/* eslint-disable no-undef */
-
-var morphIdentifier = 0;
-var t2DGeometry$2 = geometry;
-var queueInstance$3 = queue;
-var easying = fetchTransitionType;
-
-function animeId$2() {
-    morphIdentifier += 1;
-    return "morph_" + morphIdentifier;
-}
+var t2DGeometry$1 = geometry;
 
 function pathCmdIsValid(_) {
     return (
@@ -1407,8 +550,8 @@ function updateBBox(d, pd, minMax, bbox) {
             }
         });
     } else if (["Q", "C", "q", "c"].indexOf(d.type) !== -1) {
-        var co = t2DGeometry$2.cubicBezierCoefficients(d);
-        var exe = t2DGeometry$2.cubicBezierTransition.bind(null, d.p0, co);
+        var co = t2DGeometry$1.cubicBezierCoefficients(d);
+        var exe = t2DGeometry$1.cubicBezierTransition.bind(null, d.p0, co);
         var ii = 0;
         var point;
 
@@ -1576,7 +719,7 @@ function v(rel, p1) {
     });
     this.cntrl = null;
     this.cp = addVectors(p1, temp);
-    this.segmentLength = t2DGeometry$2.getDistance(this.pp, this.cp);
+    this.segmentLength = t2DGeometry$1.getDistance(this.pp, this.cp);
     this.stack.push({
         type: "V",
         p0: this.pp,
@@ -1584,7 +727,7 @@ function v(rel, p1) {
         length: this.segmentLength,
 
         pointAt: function pointAt(f) {
-            return t2DGeometry$2.linearTransitionBetweenPoints(this.p0, this.p1, f);
+            return t2DGeometry$1.linearTransitionBetweenPoints(this.p0, this.p1, f);
         },
     });
     this.length += this.segmentLength;
@@ -1605,7 +748,7 @@ function l(rel, p1) {
     });
     this.cntrl = null;
     this.cp = addVectors(p1, temp);
-    this.segmentLength = t2DGeometry$2.getDistance(this.pp, this.cp);
+    this.segmentLength = t2DGeometry$1.getDistance(this.pp, this.cp);
     this.stack.push({
         type: rel ? "L" : "l",
         p0: this.pp,
@@ -1616,7 +759,7 @@ function l(rel, p1) {
         length: this.segmentLength,
 
         pointAt: function pointAt(f) {
-            return t2DGeometry$2.linearTransitionBetweenPoints(this.p0, this.p1, f);
+            return t2DGeometry$1.linearTransitionBetweenPoints(this.p0, this.p1, f);
         },
     });
     this.length += this.segmentLength;
@@ -1637,7 +780,7 @@ function h(rel, p1) {
     });
     this.cp = addVectors(p1, temp);
     this.cntrl = null;
-    this.segmentLength = t2DGeometry$2.getDistance(this.pp, this.cp);
+    this.segmentLength = t2DGeometry$1.getDistance(this.pp, this.cp);
     this.stack.push({
         type: rel ? "H" : "h",
         p0: this.pp,
@@ -1647,7 +790,7 @@ function h(rel, p1) {
             p1: p1,
         },
         pointAt: function pointAt(f) {
-            return t2DGeometry$2.linearTransitionBetweenPoints(this.p0, this.p1, f);
+            return t2DGeometry$1.linearTransitionBetweenPoints(this.p0, this.p1, f);
         },
     });
     this.length += this.segmentLength;
@@ -1663,14 +806,14 @@ function h(rel, p1) {
 
 function z() {
     this.cp = this.start;
-    this.segmentLength = t2DGeometry$2.getDistance(this.pp, this.cp);
+    this.segmentLength = t2DGeometry$1.getDistance(this.pp, this.cp);
     this.stack.push({
         p0: this.pp,
         p1: this.cp,
         type: "Z",
         length: this.segmentLength,
         pointAt: function pointAt(f) {
-            return t2DGeometry$2.linearTransitionBetweenPoints(this.p0, this.p1, f);
+            return t2DGeometry$1.linearTransitionBetweenPoints(this.p0, this.p1, f);
         },
     });
     this.length += this.segmentLength;
@@ -1692,7 +835,7 @@ function q(rel, c1, ep) {
     var cntrl1 = addVectors(c1, temp);
     var endPoint = addVectors(ep, temp);
     this.cp = endPoint;
-    this.segmentLength = t2DGeometry$2.bezierLength(this.pp, cntrl1, this.cp);
+    this.segmentLength = t2DGeometry$1.bezierLength(this.pp, cntrl1, this.cp);
     this.cp = endPoint;
     this.stack.push({
         type: rel ? "Q" : "q",
@@ -1707,7 +850,7 @@ function q(rel, c1, ep) {
         length: this.segmentLength,
 
         pointAt: function pointAt(f) {
-            return t2DGeometry$2.bezierTransition(this.p0, this.cntrl1, this.p1, f);
+            return t2DGeometry$1.bezierTransition(this.p0, this.cntrl1, this.p1, f);
         },
     });
     this.length += this.segmentLength;
@@ -1731,7 +874,7 @@ function c(rel, c1, c2, ep) {
     var cntrl1 = addVectors(c1, temp);
     var cntrl2 = addVectors(c2, temp);
     var endPoint = addVectors(ep, temp);
-    var co = t2DGeometry$2.cubicBezierCoefficients({
+    var co = t2DGeometry$1.cubicBezierCoefficients({
         p0: this.pp,
         cntrl1: cntrl1,
         cntrl2: cntrl2,
@@ -1739,7 +882,7 @@ function c(rel, c1, c2, ep) {
     });
     this.cntrl = cntrl2;
     this.cp = endPoint;
-    this.segmentLength = t2DGeometry$2.cubicBezierLength(this.pp, co);
+    this.segmentLength = t2DGeometry$1.cubicBezierLength(this.pp, co);
     this.stack.push({
         type: rel ? "C" : "c",
         p0: this.pp,
@@ -1755,7 +898,7 @@ function c(rel, c1, c2, ep) {
         },
 
         pointAt: function pointAt(f) {
-            return t2DGeometry$2.cubicBezierTransition(this.p0, this.co, f);
+            return t2DGeometry$1.cubicBezierTransition(this.p0, this.co, f);
         },
     });
     this.length += this.segmentLength;
@@ -1781,13 +924,13 @@ function s(rel, c2, ep) {
 
     var endPoint = addVectors(ep, temp);
     this.cp = endPoint;
-    var co = t2DGeometry$2.cubicBezierCoefficients({
+    var co = t2DGeometry$1.cubicBezierCoefficients({
         p0: this.pp,
         cntrl1: cntrl1,
         cntrl2: cntrl2,
         p1: endPoint,
     });
-    this.segmentLength = t2DGeometry$2.cubicBezierLength(this.pp, co);
+    this.segmentLength = t2DGeometry$1.cubicBezierLength(this.pp, co);
     this.stack.push({
         type: rel ? "S" : "s",
         p0: this.pp,
@@ -1802,7 +945,7 @@ function s(rel, c2, ep) {
         },
 
         pointAt: function pointAt(f) {
-            return t2DGeometry$2.cubicBezierTransition(this.p0, this.co, f);
+            return t2DGeometry$1.cubicBezierTransition(this.p0, this.co, f);
         },
     }); // this.stack.segmentLength += this.segmentLength
     updateBBox(
@@ -1825,7 +968,7 @@ function a(rel, rx, ry, xRotation, arcLargeFlag, sweepFlag, ep) {
     var self = this;
     var endPoint = addVectors(ep, temp);
     this.cp = endPoint;
-    var arcToQuad = t2DGeometry$2.arcToBezier({
+    var arcToQuad = t2DGeometry$1.arcToBezier({
         px: this.pp.x,
         py: this.pp.y,
         cx: endPoint.x,
@@ -1856,9 +999,9 @@ function a(rel, rx, ry, xRotation, arcLargeFlag, sweepFlag, ep) {
             x: d.x,
             y: d.y,
         };
-        var segmentLength = t2DGeometry$2.cubicBezierLength(
+        var segmentLength = t2DGeometry$1.cubicBezierLength(
             pp,
-            t2DGeometry$2.cubicBezierCoefficients({
+            t2DGeometry$1.cubicBezierCoefficients({
                 p0: pp,
                 cntrl1: cntrl1,
                 cntrl2: cntrl2,
@@ -1874,7 +1017,7 @@ function a(rel, rx, ry, xRotation, arcLargeFlag, sweepFlag, ep) {
             length: segmentLength,
 
             pointAt: function pointAt(f) {
-                return t2DGeometry$2.bezierTransition(this.p0, this.cntrl1, this.cntrl2, this.p1, f);
+                return t2DGeometry$1.bezierTransition(this.p0, this.cntrl1, this.cntrl2, this.p1, f);
             },
         });
         self.length += segmentLength;
@@ -2313,302 +1456,6 @@ Path.prototype.case = function pCase(currCmd) {
     }
 };
 
-function relativeCheck(type) {
-    return ["S", "C", "V", "L", "H", "Q"].indexOf(type) > -1;
-}
-
-var CubicBezierTransition = function CubicBezierTransition(type, p0, c1, c2, co, length) {
-    this.type = type;
-    this.p0 = p0;
-    this.c1_src = c1;
-    this.c2_src = c2;
-    this.co = co;
-    this.length_src = length;
-};
-
-CubicBezierTransition.prototype.execute = function (f) {
-    var co = this.co;
-    var p0 = this.p0;
-    var c1 = this.c1_src;
-    var c2 = this.c2_src;
-    var c1Temp = {
-        x: p0.x + (c1.x - p0.x) * f,
-        y: p0.y + (c1.y - p0.y) * f,
-    };
-    var c2Temp = {
-        x: c1.x + (c2.x - c1.x) * f,
-        y: c1.y + (c2.y - c1.y) * f,
-    };
-    this.cntrl1 = c1Temp;
-    this.cntrl2 = {
-        x: c1Temp.x + (c2Temp.x - c1Temp.x) * f,
-        y: c1Temp.y + (c2Temp.y - c1Temp.y) * f,
-    };
-    this.p1 = {
-        x: co.ax * t2DGeometry$2.pow(f, 3) + co.bx * t2DGeometry$2.pow(f, 2) + co.cx * f + p0.x,
-        y: co.ay * t2DGeometry$2.pow(f, 3) + co.by * t2DGeometry$2.pow(f, 2) + co.cy * f + p0.y,
-    };
-    this.length = this.length_src * f;
-    this.relative = {
-        cntrl1: relativeCheck(this.type) ? this.cntrl1 : subVectors(this.cntrl1, this.p0),
-        cntrl2: relativeCheck(this.type) ? this.cntrl2 : subVectors(this.cntrl2, this.p0),
-        p1: relativeCheck(this.type) ? this.p1 : subVectors(this.p1, this.p0),
-    };
-    return this;
-};
-
-CubicBezierTransition.prototype.pointAt = function (f) {
-    return t2DGeometry$2.cubicBezierTransition(this.p0, this.co, f);
-};
-
-var BezierTransition = function BezierTransition(type, p0, p1, p2, length, f) {
-    this.type = type;
-    this.p0 = p0;
-    this.p1_src = p1;
-    this.p2_src = p2;
-    this.length_src = length;
-    this.length = 0;
-};
-
-BezierTransition.prototype.execute = function (f) {
-    var p0 = this.p0;
-    var p1 = this.p1_src;
-    var p2 = this.p2_src;
-    this.length = this.length_src * f;
-    this.cntrl1 = {
-        x: p0.x + (p1.x - p0.x) * f,
-        y: p0.y + (p1.y - p0.y) * f,
-    };
-    this.cntrl2 = this.cntrl1;
-    this.p1 = {
-        x: (p0.x - 2 * p1.x + p2.x) * f * f + (2 * p1.x - 2 * p0.x) * f + p0.x,
-        y: (p0.y - 2 * p1.y + p2.y) * f * f + (2 * p1.y - 2 * p0.y) * f + p0.y,
-    };
-    this.relative = {
-        cntrl1: relativeCheck(this.type) ? this.cntrl1 : subVectors(this.cntrl1, this.p0),
-        p1: relativeCheck(this.type) ? this.p1 : subVectors(this.p1, this.p0),
-    };
-    return this;
-};
-
-BezierTransition.prototype.pointAt = function (f) {
-    return t2DGeometry$2.bezierTransition(this.p0, this.cntrl1, this.p1, f);
-};
-
-var LinearTransitionBetweenPoints = function LinearTransitionBetweenPoints(
-    type,
-    p0,
-    p2,
-    length,
-    f
-) {
-    this.type = type;
-    this.p0 = p0;
-    this.p1 = p0;
-    this.p2_src = p2;
-    this.length_src = length;
-    this.length = 0;
-};
-
-LinearTransitionBetweenPoints.prototype.execute = function (f) {
-    var p0 = this.p0;
-    var p2 = this.p2_src;
-    this.p1 = {
-        x: p0.x + (p2.x - p0.x) * f,
-        y: p0.y + (p2.y - p0.y) * f,
-    };
-    this.length = this.length_src * f;
-    this.relative = {
-        p1: relativeCheck(this.type) ? this.p1 : subVectors(this.p1, this.p0),
-    };
-    return this;
-};
-
-LinearTransitionBetweenPoints.prototype.pointAt = function (f) {
-    return t2DGeometry$2.linearTransitionBetweenPoints(this.p0, this.p1, f);
-};
-
-function animatePathTo(targetConfig) {
-    var self = this;
-    var duration = targetConfig.duration;
-    var ease = targetConfig.ease;
-    var end = targetConfig.end;
-    var loop = targetConfig.loop;
-    var direction = targetConfig.direction;
-    var d = targetConfig.d;
-    var src = d || self.attr.d;
-    var totalLength = 0;
-    self.arrayStack = [];
-
-    if (!src) {
-        throw Error("Path Not defined");
-    }
-
-    var chainInstance = chain.sequenceChain();
-    var newPathInstance = isTypePath(src) ? src : new Path(src);
-    var arrExe = newPathInstance.stackGroup.reduce(function (p, c) {
-        p = p.concat(c);
-        return p;
-    }, []);
-    var mappedArr = [];
-
-    var loop$1 = function ( i ) {
-        if (arrExe[i].type === "Z" || arrExe[i].type === "z") {
-            mappedArr.push({
-                run: function run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                render: new LinearTransitionBetweenPoints(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[0].p0,
-                    arrExe[i].segmentLength
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += 0;
-        } else if (["V", "v", "H", "h", "L", "l"].indexOf(arrExe[i].type) !== -1) {
-            mappedArr.push({
-                run: function run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                render: new LinearTransitionBetweenPoints(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[i].p1,
-                    arrExe[i].length
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += arrExe[i].length;
-        } else if (arrExe[i].type === "Q" || arrExe[i].type === "q") {
-            mappedArr.push({
-                run: function run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                render: new BezierTransition(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[i].cntrl1,
-                    arrExe[i].p1,
-                    arrExe[i].length
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += arrExe[i].length;
-        } else if (
-            arrExe[i].type === "C" ||
-            arrExe[i].type === "S" ||
-            arrExe[i].type === "c" ||
-            arrExe[i].type === "s"
-        ) {
-            var co = t2DGeometry$2.cubicBezierCoefficients(arrExe[i]);
-            mappedArr.push({
-                run: function run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                co: co,
-                render: new CubicBezierTransition(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[i].cntrl1,
-                    arrExe[i].cntrl2,
-                    co,
-                    arrExe[i].length
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += arrExe[i].length;
-        } else if (arrExe[i].type === "M" || arrExe[i].type === "m") {
-            mappedArr.push({
-                run: function run() {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = {
-                        type: "M",
-                        p0: arrExe[i].p0,
-                        length: 0,
-
-                        pointAt: function pointAt(f) {
-                            return this.p0;
-                        },
-                    };
-                },
-                target: self,
-                id: i,
-                length: 0,
-            });
-            totalLength += 0;
-        } else ;
-    };
-
-    for (var i = 0; i < arrExe.length; i += 1) loop$1( i );
-
-    mappedArr.forEach(function (d) {
-        d.duration = (d.length / totalLength) * duration;
-    });
-    chainInstance
-        .add(mappedArr)
-        .ease(ease)
-        .loop(loop || 0)
-        .direction(direction || "default");
-
-    if (typeof end === "function") {
-        chainInstance.end(end.bind(self));
-    }
-
-    chainInstance.commit();
-    return this;
-}
-
-function morphTo(targetConfig) {
-    var self = this;
-    var duration = targetConfig.duration;
-    var ease = targetConfig.ease;
-    var loop = targetConfig.loop ? targetConfig.loop : 0;
-    var direction = targetConfig.direction ? targetConfig.direction : "default";
-    var destD = targetConfig.attr.d ? targetConfig.attr.d : self.attr.d;
-    var srcPath = isTypePath(self.attr.d) ? self.attr.d.fetchPathString() : self.attr.d;
-    var destPath = isTypePath(destD) ? destD.fetchPathString() : destD;
-
-    var morphExe = flubber.interpolate(srcPath, destPath, {
-        maxSegmentLength: 25,
-    });
-
-    queueInstance$3.add(
-        animeId$2(),
-        {
-            run: function run(f) {
-                self.setAttr("d", morphExe(f));
-            },
-            target: self,
-            duration: duration,
-            loop: loop,
-            direction: direction,
-        },
-        easying(ease)
-    );
-}
 
 function isTypePath(pathInstance) {
     return pathInstance instanceof Path;
@@ -2618,9 +1465,7 @@ var path = {
     instance: function (d) {
         return new Path(d);
     },
-    isTypePath: isTypePath,
-    animatePathTo: animatePathTo,
-    morphTo: morphTo,
+    isTypePath: isTypePath
 };
 
 /* eslint-disable no-undef */
@@ -2775,9 +1620,6 @@ var colorMap = {
     YellowGreen: "9acd32",
 };
 
-var round = Math.round;
-var defaultColor = "rgba(0,0,0,0)";
-
 function RGBA(r, g, b, a) {
     this.r = r;
     this.g = g;
@@ -2885,21 +1727,6 @@ function colorToRGB(val) {
           };
 }
 
-function colorRGBtransition(src, dest) {
-    src = src || defaultColor;
-    dest = dest || defaultColor;
-    src = colorToRGB(src);
-    dest = colorToRGB(dest);
-    return function trans(f) {
-        return new RGBA(
-            round(src.r + (dest.r - src.r) * f),
-            round(src.g + (dest.g - src.g) * f),
-            round(src.b + (dest.b - src.b) * f),
-            round(src.a + (dest.a - src.a) * f)
-        );
-    };
-}
-
 function rgbaInstance(r, g, b, a) {
     return new RGBA(r, g, b, a);
 }
@@ -2918,7 +1745,6 @@ var colorMap$1 = {
     hexToRgb: hexToRgb,
     rgbToHex: rgbToHex,
     hslToRgb: hslParse,
-    transition: colorRGBtransition,
     colorToRGB: colorToRGB,
     rgba: rgbaInstance,
     isTypeColor: isTypeColor,
@@ -2927,736 +1753,7 @@ var colorMap$1 = {
     },
 };
 
-var queueInstance$2 = queue;
-var easing$1 = fetchTransitionType;
-
-var animeIdentifier$1 = 0;
-
-function animeId$1() {
-    animeIdentifier$1 += 1;
-    return animeIdentifier$1;
-}
-
-function checkForTranslateBounds(trnsExt, ref, newTrns) {
-    var scaleX = ref[0];
-    var scaleY = ref[1];
-
-    return (
-        newTrns[0] >= trnsExt[0][0] * scaleX &&
-        newTrns[0] <= trnsExt[1][0] * scaleX &&
-        newTrns[1] >= trnsExt[0][1] * scaleY &&
-        newTrns[1] <= trnsExt[1][1] * scaleY
-    );
-}
-
-function applyTranslate(event, ref, extent) {
-    var dx = ref.dx; if ( dx === void 0 ) dx = 0;
-    var dy = ref.dy; if ( dy === void 0 ) dy = 0;
-
-    var translate = event.transform.translate;
-    var ref$1 = event.transform.scale;
-    var scaleX = ref$1[0];
-    var scaleY = ref$1[1]; if ( scaleY === void 0 ) scaleY = scaleX;
-    if (checkForTranslateBounds(extent, [scaleX, scaleY], [translate[0] + dx, translate[1] + dy])) {
-        dx /= scaleX;
-        dy /= scaleY;
-        event.dx = dx;
-        event.dy = dy;
-        translate[0] /= scaleX;
-        translate[1] /= scaleY;
-        translate[0] += dx;
-        translate[1] += dy;
-        translate[0] *= scaleX;
-        translate[1] *= scaleY;
-    }
-    return event;
-}
-
-var DragClass = function () {
-    var self = this;
-    this.dragStartFlag = false;
-    this.dragExtent = [
-        [-Infinity, -Infinity],
-        [Infinity, Infinity] ];
-    this.event = {
-        x: 0,
-        y: 0,
-        dx: 0,
-        dy: 0,
-        transform: {
-            translate: [0, 0],
-            scale: [1, 1],
-        },
-    };
-    this.onDragStart = function (trgt, event) {
-        self.event.x = event.offsetX;
-        self.event.y = event.offsetY;
-        self.event.dx = 0;
-        self.event.dy = 0;
-        self.dragStartFlag = true;
-    };
-    this.onDrag = function () {};
-    this.onDragEnd = function () {
-        self.event.x = event.offsetX;
-        self.event.y = event.offsetY;
-        self.event.dx = 0;
-        self.event.dy = 0;
-        self.dragStartFlag = false;
-    };
-};
-DragClass.prototype = {
-    dragExtent: function (ext) {
-        this.dragExtent = ext;
-        return this;
-    },
-    dragStart: function (fun) {
-        var self = this;
-        if (typeof fun === "function") {
-            this.onDragStart = function (trgt, event) {
-                self.event.x = event.offsetX;
-                self.event.y = event.offsetY;
-                self.event.dx = 0;
-                self.event.dy = 0;
-                fun.call(trgt, self.event);
-                self.dragStartFlag = true;
-            };
-        }
-        return this;
-    },
-    drag: function (fun) {
-        var self = this;
-        if (typeof fun === "function") {
-            this.onDrag = function (trgt, event) {
-                var dx = event.offsetX - self.event.x;
-                var dy = event.offsetY - self.event.y;
-                self.event.x = event.offsetX;
-                self.event.y = event.offsetY;
-                self.event = applyTranslate(this.event, { dx: dx, dy: dy }, self.dragExtent);
-                fun.call(trgt, self.event);
-            };
-        }
-        return this;
-    },
-    dragEnd: function (fun) {
-        var self = this;
-        if (typeof fun === "function") {
-            this.onDragEnd = function (trgt, event) {
-                self.dragStartFlag = false;
-                self.event.x = event.offsetX;
-                self.event.y = event.offsetY;
-                self.event.dx = 0;
-                self.event.dy = 0;
-                fun.call(trgt, self.event);
-            };
-        }
-        return this;
-    },
-    bindMethods: function (trgt) {
-        var self = this;
-        trgt.dragTo = function (k, point) {
-            self.dragTo(trgt, k, point);
-        };
-    },
-    execute: function (trgt, event, eventType) {
-        var self = this;
-        this.event.e = event;
-        if (event.preventDefault) {
-            event.preventDefault();
-        }
-        if (!this.dragStartFlag && (eventType === "mousedown" || eventType === "pointerdown")) {
-            self.onDragStart(trgt, event);
-        } else if (
-            this.onDragEnd &&
-            this.dragStartFlag &&
-            (eventType === "mouseup" ||
-                eventType === "mouseleave" ||
-                eventType === "pointerleave" ||
-                eventType === "pointerup")
-        ) {
-            self.onDragEnd(trgt, event);
-        } else if (this.dragStartFlag && this.onDrag) {
-            self.onDrag(trgt, event);
-        }
-    },
-};
-
-function scaleRangeCheck(range, scale) {
-    if (scale <= range[0]) {
-        return range[0];
-    } else if (scale >= range[1]) {
-        return range[1];
-    }
-    return scale;
-}
-
-function computeTransform(transformObj, oScale, nScale, point) {
-    transformObj.translate[0] /= oScale;
-    transformObj.translate[1] /= oScale;
-    transformObj.translate[0] -= point[0] / oScale - point[0] / nScale;
-    transformObj.translate[1] -= point[1] / oScale - point[1] / nScale;
-    transformObj.scale = [nScale, nScale];
-    transformObj.translate[0] *= nScale;
-    transformObj.translate[1] *= nScale;
-
-    // console.log(transformObj.translate[0], transformObj.translate[1]);
-
-    return transformObj;
-}
-
-var ZoomClass = function () {
-    var self = this;
-    this.event = {
-        x: 0,
-        y: 0,
-        dx: 0,
-        dy: 0,
-        distance: 0,
-    };
-    this.event.pointers = [];
-    this.event.transform = {
-        translate: [0, 0],
-        scale: [1, 1],
-    };
-    this.zoomBy_ = 0.001;
-    this.zoomExtent_ = [0, Infinity];
-    this.zoomStartFlag = false;
-    this.zoomDuration = 250;
-    this.onZoomStart = function (trgt, event) {
-        self.event.x = event.offsetX;
-        self.event.y = event.offsetY;
-        self.event.dx = 0;
-        self.event.dy = 0;
-        self.zoomStartFlag = true;
-        self.event.distance = 0;
-    };
-    this.onZoom = function (trgt, event) {
-        self.event.x = event.offsetX;
-        self.event.y = event.offsetY;
-    };
-    this.onZoomEnd = function (trgt, event) {
-        self.event.x = event.offsetX;
-        self.event.y = event.offsetY;
-        self.event.dx = 0;
-        self.event.dy = 0;
-        self.zoomStartFlag = false;
-        self.event.distance = 0;
-    };
-    this.onPanStart = function (trgt, event) {};
-    this.onPan = function (trgt, event) {};
-    this.onPanEnd = function () {};
-    this.disableWheel = false;
-    this.disableDbclick = false;
-};
-
-ZoomClass.prototype.zoomStart = function (fun) {
-    var self = this;
-    if (typeof fun === "function") {
-        this.zoomStartExe = fun;
-        this.onZoomStart = function (trgt, event, eventsInstance) {
-            if (eventsInstance.pointers && eventsInstance.pointers.length === 2) {
-                var pointers = eventsInstance.pointers;
-                event = {
-                    x: pointers[0].offsetX + (pointers[1].offsetX - pointers[0].offsetX) * 0.5,
-                    y: pointers[0].offsetY + (pointers[1].offsetY - pointers[0].offsetY) * 0.5,
-                };
-            }
-            self.event.x = event.offsetX;
-            self.event.y = event.offsetY;
-            self.event.dx = 0;
-            self.event.dy = 0;
-            if (!self.zoomStartFlag) {
-                fun.call(trgt, self.event);
-            }
-            self.zoomStartFlag = true;
-            self.event.distance = 0;
-        };
-    }
-    return this;
-};
-
-ZoomClass.prototype.zoom = function (fun) {
-    var self = this;
-    if (typeof fun === "function") {
-        this.zoomExe = fun;
-        this.onZoom = function (trgt, event) {
-            var transform = self.event.transform;
-            var origScale = transform.scale[0];
-            var newScale = origScale;
-            var deltaY = event.deltaY;
-            var x = event.offsetX;
-            var y = event.offsetY;
-
-            newScale = scaleRangeCheck(self.zoomExtent_, newScale + deltaY * -1 * self.zoomBy_);
-
-            self.event.transform = computeTransform(transform, origScale, newScale, [x, y]);
-            self.event.x = x;
-            self.event.y = y;
-            fun.call(trgt, self.event);
-        };
-    }
-    return this;
-};
-
-ZoomClass.prototype.zoomEnd = function (fun) {
-    var self = this;
-    if (typeof fun === "function") {
-        this.zoomEndExe = fun;
-        this.onZoomEnd = function (trgt, event) {
-            self.event.x = event.offsetX;
-            self.event.y = event.offsetY;
-            self.event.dx = 0;
-            self.event.dy = 0;
-            self.zoomStartFlag = false;
-            fun.call(trgt, self.event);
-            self.event.distance = 0;
-        };
-    }
-    return this;
-};
-
-ZoomClass.prototype.zoomTransition = function () {};
-
-ZoomClass.prototype.zoomExecute = function (trgt, event, eventsInstance) {
-    this.eventType = "zoom";
-    if (event.preventDefault) {
-        event.preventDefault();
-    }
-    if (!this.zoomStartFlag) {
-        this.onZoomStart(trgt, event, eventsInstance);
-    } else {
-        this.onZoom(trgt, event);
-    }
-};
-
-ZoomClass.prototype.zoomPinch = function (trgt, event, eventsInstance) {
-    var pointers = eventsInstance.pointers;
-    if (event.preventDefault) {
-        event.preventDefault();
-    }
-    if (eventsInstance.pointers.length === 2) {
-        if (!this.zoomStartFlag) {
-            this.onZoomStart(trgt, event, eventsInstance);
-        } else {
-            var distance_ = this.event.distance;
-            for (var i = 0; i < pointers.length; i++) {
-                if (event.pointerId === pointers[i].pointerId) {
-                    pointers[i] = event;
-                    break;
-                }
-            }
-            var distance = geometry.getDistance(
-                { x: pointers[0].offsetX, y: pointers[0].offsetY },
-                { x: pointers[1].offsetX, y: pointers[1].offsetY }
-            );
-            var pinchEvent = {
-                offsetX: this.event.x, // + ((pointers[1].clientX - pointers[0].clientX) * 0.5),
-                offsetY: this.event.y, // + ((pointers[1].clientY - pointers[0].clientY) * 0.5),
-                deltaY: !distance_ ? 0 : distance_ - distance,
-            };
-            // console.log(pinchEvent.deltaY);
-            this.event.distance = distance;
-            this.onZoom(trgt, pinchEvent);
-        }
-    }
-};
-
-ZoomClass.prototype.scaleBy = function scaleBy(trgt, k, point) {
-    var self = this;
-    var transform = self.event.transform;
-    var newScale = k * transform.scale[0];
-    var origScale = transform.scale[0];
-    var zoomTrgt = this.zoomTarget_ || point;
-    var xdiff = (zoomTrgt[0] - point[0]) * origScale;
-    var ydiff = (zoomTrgt[1] - point[1]) * origScale;
-    var pf = 0;
-
-    var targetConfig = {
-        run: function run(f) {
-            var oScale = transform.scale[0];
-            var nscale = scaleRangeCheck(
-                self.zoomExtent_,
-                origScale + (newScale - origScale) * f
-            );
-
-            self.event.transform = computeTransform(transform, oScale, nscale, point);
-            self.event.transform.translate[0] += (xdiff * (f - pf)) / nscale;
-            self.event.transform.translate[1] += (ydiff * (f - pf)) / nscale;
-
-            pf = f;
-
-            if (self.zoomExe) {
-                self.zoomExe.call(trgt, self.event);
-            }
-        },
-        target: trgt,
-        duration: self.zoomDuration,
-        delay: 0,
-        end: function () {
-            if (self.onZoomEnd) {
-                self.onZoomEnd(trgt, {});
-            }
-        },
-        loop: 1,
-        direction: "default",
-        ease: "default",
-    };
-    queueInstance$2.add(animeId$1(), targetConfig, easing$1(targetConfig.ease));
-};
-
-ZoomClass.prototype.zoomTarget = function zoomTarget(point) {
-    this.zoomTarget_ = point;
-};
-
-ZoomClass.prototype.scaleTo = function scaleTo(trgt, newScale, point) {
-    var self = this;
-    var transform = self.event.transform;
-    var origScale = transform.scale[0];
-    var zoomTrgt = this.zoomTarget_ || point;
-    var xdiff = (zoomTrgt[0] - point[0]) * origScale;
-    var ydiff = (zoomTrgt[1] - point[1]) * origScale;
-    var pf = 0;
-    var targetConfig = {
-        run: function run(f) {
-            var oScale = transform.scale[0];
-            var nscale = scaleRangeCheck(
-                self.zoomExtent_,
-                origScale + (newScale - origScale) * f
-            );
-
-            self.event.transform = computeTransform(transform, oScale, nscale, point);
-            self.event.transform.translate[0] += (xdiff * (f - pf)) / nscale;
-            self.event.transform.translate[1] += (ydiff * (f - pf)) / nscale;
-
-            pf = f;
-
-            if (!self.zoomStartFlag) {
-                self.onZoomStart(
-                    trgt,
-                    {
-                        offsetX: point[0],
-                        offsetY: point[1],
-                    },
-                    {}
-                );
-            }
-
-            if (self.zoomExe) {
-                self.zoomExe.call(trgt, self.event);
-            }
-        },
-        target: trgt,
-        duration: self.zoomDuration,
-        delay: 0,
-        end: function () {
-            if (self.onZoomEnd) {
-                self.onZoomEnd(trgt, self.event);
-            }
-        },
-        loop: 1,
-        direction: "default",
-        ease: "default",
-    };
-    queueInstance$2.add(animeId$1(), targetConfig, easing$1(targetConfig.ease));
-};
-
-ZoomClass.prototype.panTo = function panTo(trgt, point) {
-    var self = this;
-    var transform = self.event.transform;
-    var xdiff = point[0] - self.event.x;
-    var ydiff = point[1] - self.event.y;
-    var pf = 0;
-    var targetConfig = {
-        run: function run(f) {
-            var ref = transform.scale;
-            var scale = ref[0];
-
-            transform.translate[0] += (xdiff * (f - pf)) / scale;
-            transform.translate[1] += (ydiff * (f - pf)) / scale;
-
-            pf = f;
-
-            if (self.zoomExe) {
-                self.zoomExe.call(trgt, self.event);
-            }
-        },
-        target: trgt,
-        duration: self.zoomDuration,
-        delay: 0,
-        end: function () {
-            if (self.onZoomEnd) {
-                self.onZoomEnd(trgt, self.event);
-            }
-        },
-        loop: 1,
-        direction: "default",
-        ease: "default",
-    };
-    queueInstance$2.add(animeId$1(), targetConfig, easing$1(targetConfig.ease));
-};
-
-ZoomClass.prototype.bindMethods = function (trgt) {
-    var self = this;
-    trgt.scaleTo = function (k, point) {
-        self.scaleTo(trgt, k, point);
-    };
-    trgt.scaleBy = function (k, point) {
-        self.scaleBy(trgt, k, point);
-        return trgt;
-    };
-    trgt.panTo = function (srcPoint, point) {
-        self.panTo(trgt, srcPoint, point);
-        return trgt;
-    };
-};
-
-ZoomClass.prototype.zoomFactor = function (factor) {
-    this.zoomBy_ = factor;
-    return this;
-};
-
-ZoomClass.prototype.scaleExtent = function (range) {
-    this.zoomExtent_ = range;
-    return this;
-};
-ZoomClass.prototype.duration = function (time) {
-    this.zoomDuration = time || 250;
-    return this;
-};
-
-ZoomClass.prototype.panExtent = function (range) {
-    // range to be [[x1, y1], [x2, y2]];
-    this.panExtent_ = range;
-    this.panFlag = true;
-    return this;
-};
-
-ZoomClass.prototype.panExecute = function (trgt, event, eventType, eventsInstance) {
-    if (eventsInstance.pointers.length !== 1) {
-        return;
-    }
-    this.event.e = event;
-    this.eventType = "pan";
-    if (event.preventDefault) {
-        event.preventDefault();
-    }
-    if (
-        event.type === "touchstart" ||
-        event.type === "touchmove" ||
-        event.type === "touchend" ||
-        event.type === "touchcancel"
-    ) {
-        event.offsetX = event.touches[0].clientX;
-        event.offsetY = event.touches[0].clientY;
-    }
-    if (!this.zoomStartFlag && (eventType === "mousedown" || eventType === "pointerdown")) {
-        this.onZoomStart(trgt, event, {});
-    } else if (
-        this.onZoomEnd &&
-        (eventType === "mouseup" ||
-            eventType === "mouseleave" ||
-            eventType === "pointerup" ||
-            eventType === "pointerleave")
-    ) {
-        this.onZoomEnd(trgt, event);
-    } else if (this.zoomExe) {
-        var dx = event.offsetX - this.event.x;
-        var dy = event.offsetY - this.event.y;
-
-        this.event.x = event.offsetX;
-        this.event.y = event.offsetY;
-
-        this.event = applyTranslate(this.event, { dx: dx, dy: dy }, this.panExtent_);
-        this.zoomExe.call(trgt, this.event);
-    }
-    if (event.preventDefault) {
-        event.preventDefault();
-    }
-};
-
-var behaviour = {
-    drag: function () {
-        return new DragClass();
-    },
-    zoom: function () {
-        return new ZoomClass();
-    },
-};
-
 /* eslint-disable no-undef */
-// import { ResizeObserver as resizePolyfill } from "@juggle/resize-observer";
-
-var animeIdentifier = 0;
-var t2DGeometry$1 = geometry;
-var easing = fetchTransitionType;
-var queueInstance$1 = queue;
-// const ResizeObserver = window.ResizeObserver || resizePolyfill;
-// const ResizeObserver = function () {};
-function animeId() {
-    animeIdentifier += 1;
-    return animeIdentifier;
-}
-
-var transitionSetAttr = function transitionSetAttr(self, key, value) {
-    return function inner(f) {
-        self.setAttr(key, value.call(self, f));
-    };
-};
-
-var transformTransition = function transformTransition(self, subkey, value) {
-    var exe = [];
-    var trans = self.attr.transform;
-
-    if (typeof value === "function") {
-        return function inner(f) {
-            self[subkey](value.call(self, f));
-        };
-    }
-
-    value.forEach(function (tV, i) {
-        var val;
-
-        if (trans[subkey]) {
-            if (trans[subkey][i] !== undefined) {
-                val = trans[subkey][i];
-            } else {
-                val = subkey === "scale" ? 1 : 0;
-            }
-        } else {
-            val = subkey === "scale" ? 1 : 0;
-        }
-
-        exe.push(t2DGeometry$1.intermediateValue.bind(null, val, tV));
-    });
-    return function inner(f) {
-        self[subkey](exe.map(function (d) { return d(f); }));
-    };
-};
-
-var attrTransition = function attrTransition(self, key, value) {
-    var srcVal = self.attr[key]; // if (typeof value === 'function') {
-    //   return function setAttr_ (f) {
-    //     self.setAttr(key, value.call(self, f))
-    //   }
-    // }
-
-    return function setAttr_(f) {
-        self.setAttr(key, t2DGeometry$1.intermediateValue(srcVal, value, f));
-    };
-};
-
-var styleTransition = function styleTransition(self, key, value) {
-    var srcValue;
-    var destUnit;
-    var destValue;
-
-    if (typeof value === "function") {
-        return function inner(f) {
-            self.setStyle(key, value.call(self, self.dataObj, f));
-        };
-    } else {
-        srcValue = self.style[key];
-
-        if (isNaN(value)) {
-            if (colorMap$1.isTypeColor(value)) {
-                var colorExe = colorMap$1.transition(srcValue, value);
-                return function inner(f) {
-                    self.setStyle(key, colorExe(f));
-                };
-            }
-
-            srcValue = srcValue.match(/(\d+)/g);
-            destValue = value.match(/(\d+)/g);
-            destUnit = value.match(/\D+$/);
-            srcValue = parseInt(srcValue.length > 0 ? srcValue[0] : 0, 10);
-            destValue = parseInt(destValue.length > 0 ? destValue[0] : 0, 10);
-            destUnit = destUnit.length > 0 ? destUnit[0] : "px";
-        } else {
-            srcValue = self.style[key] !== undefined ? self.style[key] : 1;
-            destValue = value;
-            destUnit = 0;
-        }
-
-        return function inner(f) {
-            self.setStyle(key, t2DGeometry$1.intermediateValue(srcValue, destValue, f) + destUnit);
-        };
-    }
-};
-
-var animate = function animate(self, targetConfig) {
-    var tattr = targetConfig.attr ? targetConfig.attr : {};
-    var tstyles = targetConfig.style ? targetConfig.style : {};
-    var runStack = [];
-    var value;
-
-    if (typeof tattr !== "function") {
-        var loop = function ( key ) {
-            if (key !== "transform") {
-                var value$1 = tattr[key];
-
-                if (typeof value$1 === "function") {
-                    runStack[runStack.length] = function setAttr_(f) {
-                        self.setAttr(key, value$1.call(self, f));
-                    };
-                } else {
-                    if (key === "d") {
-                        self.morphTo(targetConfig);
-                    } else {
-                        runStack[runStack.length] = attrTransition(self, key, tattr[key]);
-                    }
-                }
-            } else {
-                value = tattr[key];
-
-                if (typeof value === "function") {
-                    runStack[runStack.length] = transitionSetAttr(self, key, value);
-                } else {
-                    var trans = self.attr.transform;
-
-                    if (!trans) {
-                        self.attr.transform = {};
-                    }
-
-                    var subTrnsKeys = Object.keys(tattr.transform);
-
-                    for (var j = 0, jLen = subTrnsKeys.length; j < jLen; j += 1) {
-                        runStack[runStack.length] = transformTransition(
-                            self,
-                            subTrnsKeys[j],
-                            tattr.transform[subTrnsKeys[j]]
-                        );
-                    }
-                }
-            }
-        };
-
-        for (var key in tattr) loop( key );
-    } else {
-        runStack[runStack.length] = tattr.bind(self);
-    }
-
-    if (typeof tstyles !== "function") {
-        for (var style in tstyles) {
-            runStack[runStack.length] = styleTransition(self, style, tstyles[style]);
-        }
-    } else {
-        runStack[runStack.length] = tstyles.bind(self);
-    }
-
-    return {
-        run: function run(f) {
-            for (var j = 0, len = runStack.length; j < len; j += 1) {
-                runStack[j](f);
-            }
-        },
-        target: self,
-        duration: targetConfig.duration,
-        delay: targetConfig.delay ? targetConfig.delay : 0,
-        end: targetConfig.end ? targetConfig.end.bind(self, self.dataObj) : null,
-        loop: targetConfig.loop ? targetConfig.loop : 0,
-        direction: targetConfig.direction ? targetConfig.direction : "default",
-        ease: targetConfig.ease ? targetConfig.ease : "default",
-    };
-};
 
 function performJoin(data, nodes, cond) {
     var dataIds = data.map(cond);
@@ -3996,24 +2093,24 @@ NodePrototype.prototype.data = function (data) {
     return this;
 };
 
-NodePrototype.prototype.interrupt = function () {
-    if (this.animList && this.animList.length > 0) {
-        for (var i = this.animList.length - 1; i >= 0; i--) {
-            queueInstance$1.remove(this.animList[i]);
-        }
-    }
-    this.animList = [];
-    return this;
-};
+// NodePrototype.prototype.interrupt = function () {
+//     if (this.animList && this.animList.length > 0) {
+//         for (var i = this.animList.length - 1; i >= 0; i--) {
+//             queueInstance.remove(this.animList[i]);
+//         }
+//     }
+//     this.animList = [];
+//     return this;
+// };
 
-NodePrototype.prototype.animateTo = function (targetConfig) {
-    queueInstance$1.add(animeId(), animate(this, targetConfig), easing(targetConfig.ease));
-    return this;
-};
+// NodePrototype.prototype.animateTo = function (targetConfig) {
+//     // queueInstance.add(animeId(), animate(this, targetConfig), easing(targetConfig.ease));
+//     return this;
+// };
 
-NodePrototype.prototype.animateExe = function (targetConfig) {
-    return animate(this, targetConfig);
-};
+// NodePrototype.prototype.animateExe = function (targetConfig) {
+//     return animate(this, targetConfig);
+// };
 
 function fetchEls(nodeSelector, dataArray) {
     var d;
@@ -4283,110 +2380,6 @@ function interrupt() {
     return this;
 }
 
-function resolveObject(config, node, i) {
-    var obj = {};
-    var key;
-
-    for (key in config) {
-        if (key !== "end") {
-            if (typeof config[key] === "function") {
-                obj[key] = config[key].call(node, node.dataObj, i);
-            } else {
-                obj[key] = config[key];
-            }
-        }
-    }
-
-    return obj;
-}
-
-var animateArrayTo = function animateArrayTo(config) {
-    var node;
-    var newConfig;
-
-    for (var i = 0; i < this.stack.length; i += 1) {
-        newConfig = {};
-        node = this.stack[i];
-        newConfig = resolveObject(config, node, i);
-
-        if (config.attr && typeof config.attr !== "function") {
-            newConfig.attr = resolveObject(config.attr, node, i);
-        }
-
-        if (config.style && typeof config.style !== "function") {
-            newConfig.style = resolveObject(config.style, node, i);
-        }
-
-        if (config.end) {
-            newConfig.end = config.end;
-        }
-
-        if (config.ease) {
-            newConfig.ease = config.ease;
-        }
-
-        node.animateTo(newConfig);
-    }
-
-    return this;
-};
-
-var animateArrayExe = function animateArrayExe(config) {
-    var node;
-    var newConfig;
-    var exeArray = [];
-
-    for (var i = 0; i < this.stack.length; i += 1) {
-        newConfig = {};
-        node = this.stack[i];
-        newConfig = resolveObject(config, node, i);
-
-        if (config.attr && typeof config.attr !== "function") {
-            newConfig.attr = resolveObject(config.attr, node, i);
-        }
-
-        if (config.style && typeof config.style !== "function") {
-            newConfig.style = resolveObject(config.style, node, i);
-        }
-
-        if (config.end) {
-            newConfig.end = config.end;
-        }
-
-        if (config.ease) {
-            newConfig.ease = config.ease;
-        }
-
-        exeArray.push(node.animateExe(newConfig));
-    }
-
-    return exeArray;
-};
-
-var animatePathArrayTo = function animatePathArrayTo(config) {
-    var node;
-    var keys = Object.keys(config);
-
-    for (var i = 0, len = this.stack.length; i < len; i += 1) {
-        node = this.stack[i];
-        var conf = {};
-
-        for (var j = 0; j < keys.length; j++) {
-            var value = config[keys[j]];
-
-            if (typeof value === "function") {
-                value = value.call(node, node.dataObj, i);
-            }
-
-            conf[keys[j]] = value;
-        }
-
-        node.animatePathTo(conf);
-    }
-
-    return this;
-};
-
 var textArray = function textArray(value) {
     var node;
 
@@ -4403,23 +2396,8 @@ var textArray = function textArray(value) {
     }
 
     return this;
-}; // function DomPattern (self, pattern, repeatInd) {
-// }
-// DomPattern.prototype.exe = function () {
-//   return this.pattern
-// }
-// function createDomPattern (url, config) {
-//   // new DomPattern(this, patternObj, repeatInd)
-//   let patternEl = this.createEl({
-//     el: 'pattern'
-//   })
-//   patternEl.createEl({
-//     el: 'image',
-//     attr: {
-//       'xlink:href': url
-//     }
-//   })
-// }
+};
+
 // CreateElements as CollectionPrototype
 
 function CollectionPrototype(contextInfo, data, config, vDomIndex) {
@@ -4497,9 +2475,9 @@ CollectionPrototype.prototype = {
     rotate: rotate,
     scale: scale,
     exec: exec,
-    animateTo: animateArrayTo,
-    animateExe: animateArrayExe,
-    animatePathTo: animatePathArrayTo,
+    // animateTo: animateArrayTo,
+    // animateExe: animateArrayExe,
+    // animatePathTo: animatePathArrayTo,
     remove: remove,
     interrupt: interrupt,
     text: textArray,
@@ -4527,12 +2505,7 @@ var createCanvas = ref.createCanvas;
 var Image = ref.Image;
 require("canvas-5-polyfill");
 var t2DGeometry = geometry;
-var queueInstance = queue;
 var Id = 0;
-
-var zoomInstance = behaviour.zoom();
-var dragInstance = behaviour.drag();
-// let touchInstance = behaviour.touch();
 
 function domId() {
     Id += 1;
@@ -4958,7 +2931,6 @@ function imageInstance(self) {
         }
 
         self.nodeExe.BBoxUpdate = true;
-        queueInstance.vDomChanged(self.nodeExe.vDomIndex);
     };
 
     imageIns.onerror = function onerror(error) {
@@ -4983,7 +2955,6 @@ function RenderImage(ctx, props, stylesProps, onloadExe, onerrorExe, nodeExe) {
         this.setAttr(key, props[key]);
     }
 
-    queueInstance.vDomChanged(nodeExe.vDomIndex);
     self.stack = [self];
 }
 
@@ -5007,8 +2978,6 @@ RenderImage.prototype.setAttr = function RIsetAttr(attr, value) {
         }
     }
     this.attr[attr] = value;
-
-    queueInstance.vDomChanged(this.nodeExe.vDomIndex);
 };
 
 RenderImage.prototype.updateBBox = function RIupdateBBox() {
@@ -6109,7 +4078,6 @@ CanvasNodeExe.prototype.remove = function Cremove() {
     }
 
     this.dom.parent.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
 };
 
 CanvasNodeExe.prototype.attributesExe = function CattributesExe() {
@@ -6135,7 +4103,6 @@ CanvasNodeExe.prototype.setStyle = function CsetStyle(attr, value) {
         }
     }
 
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -6171,7 +4138,6 @@ CanvasNodeExe.prototype.setAttr = function CsetAttr(attr, value) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -6188,7 +4154,6 @@ CanvasNodeExe.prototype.rotate = function Crotate(angle, x, y) {
 
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -6204,7 +4169,6 @@ CanvasNodeExe.prototype.scale = function Cscale(XY) {
     this.attr.transform.scale = [XY[0], XY[1] ? XY[1] : XY[0]];
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -6216,7 +4180,6 @@ CanvasNodeExe.prototype.translate = function Ctranslate(XY) {
     this.attr.transform.translate = XY;
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -6231,7 +4194,6 @@ CanvasNodeExe.prototype.skewX = function CskewX(x) {
     this.attr.transform.skew[0] = x;
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -6246,7 +4208,6 @@ CanvasNodeExe.prototype.skewY = function CskewY(y) {
     this.attr.transform.skew[1] = y;
     this.dom.setAttr("transform", this.attr.transform);
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
@@ -6279,7 +4240,6 @@ CanvasNodeExe.prototype.prependChild = function child(childrens) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return self;
 };
 
@@ -6297,7 +4257,6 @@ CanvasNodeExe.prototype.child = function child(childrens) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
     return self;
 };
 
@@ -6324,37 +4283,6 @@ CanvasNodeExe.prototype.in = function Cinfun(co) {
     return this.dom.in(co);
 };
 
-CanvasNodeExe.prototype.on = function Con(eventType, hndlr) {
-    var self = this;
-    // this.dom.on(eventType, hndlr);
-    if (!this.events) {
-        this.events = {};
-    }
-
-    if (!hndlr && this.events[eventType]) {
-        delete this.events[eventType];
-    } else if (hndlr) {
-        if (typeof hndlr === "function") {
-            var hnd = hndlr.bind(self);
-            this.events[eventType] = function (event) {
-                hnd(event);
-            };
-        } else if (typeof hndlr === "object") {
-            this.events[eventType] = hndlr;
-            if (
-                hndlr.constructor === zoomInstance.constructor ||
-                hndlr.constructor === dragInstance.constructor
-            ) {
-                hndlr.bindMethods(this);
-            }
-        }
-    }
-
-    return this;
-};
-
-CanvasNodeExe.prototype.animatePathTo = path.animatePathTo;
-CanvasNodeExe.prototype.morphTo = path.morphTo;
 CanvasNodeExe.prototype.vDomIndex = null;
 
 CanvasNodeExe.prototype.createRadialGradient = createRadialGradient;
@@ -6372,7 +4300,6 @@ CanvasNodeExe.prototype.createEls = function CcreateEls(data, config) {
         this.vDomIndex
     );
     this.child(e.stack);
-    queueInstance.vDomChanged(this.vDomIndex);
     return e;
 };
 
@@ -6381,14 +4308,12 @@ CanvasNodeExe.prototype.text = function Ctext(value) {
         this.dom.text(value);
     }
 
-    queueInstance.vDomChanged(this.vDomIndex);
     return this;
 };
 
 CanvasNodeExe.prototype.createEl = function CcreateEl(config) {
     var e = new CanvasNodeExe(this.dom.ctx, config, domId(), this.vDomIndex);
     this.child([e]);
-    queueInstance.vDomChanged(this.vDomIndex);
     return e;
 };
 
@@ -6406,7 +4331,6 @@ CanvasNodeExe.prototype.removeChild = function CremoveChild(obj) {
     }
 
     this.BBoxUpdate = true;
-    queueInstance.vDomChanged(this.vDomIndex);
 };
 
 CanvasNodeExe.prototype.getBBox = function () {
@@ -6511,7 +4435,6 @@ function postProcess(self) {
     if (self.attr && self.attr.filter) {
         filterExec(self);
     }
-    queueInstance.vDomChanged(self.nodeExe.vDomIndex);
 }
 
 function clipExec(self) {
@@ -6563,7 +4486,6 @@ function RenderTexture(nodeExe, config) {
             { self.setAttr(key, self.attr[key]); }
     }
 
-    queueInstance.vDomChanged(nodeExe.vDomIndex);
     // self.stack = [self];
 }
 RenderTexture.prototype = new NodePrototype();
@@ -6898,19 +4820,12 @@ var canvasAPI = {
     pdfLayer: pdfLayer
 };
 
-// import utility from "./modules/utilities";
-
 var pathIns = path.instance;
 var canvasLayer = canvasAPI.canvasLayer;
 var canvasPdfLayer = canvasAPI.pdfLayer;
-// export { utility };
 
 exports.Path = pathIns;
-exports.behaviour = behaviour;
 exports.canvasLayer = canvasLayer;
 exports.canvasPdfLayer = canvasPdfLayer;
-exports.chain = chain;
 exports.color = colorMap$1;
-exports.ease = fetchTransitionType;
 exports.geometry = geometry;
-exports.queue = queue;

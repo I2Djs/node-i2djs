@@ -1,17 +1,9 @@
 /* eslint-disable no-undef */
-// import { geometry, queue, ease, chain, colorMap, path } from './'
 import geometry from "./geometry.js";
-import queue from "./queue.js";
-import ease from "./ease.js";
 import colorMap from "./colorMap.js";
-// import { ResizeObserver as resizePolyfill } from "@juggle/resize-observer";
 
 let animeIdentifier = 0;
 const t2DGeometry = geometry;
-const easing = ease;
-const queueInstance = queue;
-// const ResizeObserver = window.ResizeObserver || resizePolyfill;
-// const ResizeObserver = function () {};
 function animeId() {
     animeIdentifier += 1;
     return animeIdentifier;
@@ -54,11 +46,7 @@ const transformTransition = function transformTransition(self, subkey, value) {
 };
 
 const attrTransition = function attrTransition(self, key, value) {
-    const srcVal = self.attr[key]; // if (typeof value === 'function') {
-    //   return function setAttr_ (f) {
-    //     self.setAttr(key, value.call(self, f))
-    //   }
-    // }
+    const srcVal = self.attr[key];
 
     return function setAttr_(f) {
         self.setAttr(key, t2DGeometry.intermediateValue(srcVal, value, f));
@@ -101,80 +89,6 @@ const styleTransition = function styleTransition(self, key, value) {
             self.setStyle(key, t2DGeometry.intermediateValue(srcValue, destValue, f) + destUnit);
         };
     }
-};
-
-const animate = function animate(self, targetConfig) {
-    const tattr = targetConfig.attr ? targetConfig.attr : {};
-    const tstyles = targetConfig.style ? targetConfig.style : {};
-    const runStack = [];
-    let value;
-
-    if (typeof tattr !== "function") {
-        for (const key in tattr) {
-            if (key !== "transform") {
-                const value = tattr[key];
-
-                if (typeof value === "function") {
-                    runStack[runStack.length] = function setAttr_(f) {
-                        self.setAttr(key, value.call(self, f));
-                    };
-                } else {
-                    if (key === "d") {
-                        self.morphTo(targetConfig);
-                    } else {
-                        runStack[runStack.length] = attrTransition(self, key, tattr[key]);
-                    }
-                }
-            } else {
-                value = tattr[key];
-
-                if (typeof value === "function") {
-                    runStack[runStack.length] = transitionSetAttr(self, key, value);
-                } else {
-                    const trans = self.attr.transform;
-
-                    if (!trans) {
-                        self.attr.transform = {};
-                    }
-
-                    const subTrnsKeys = Object.keys(tattr.transform);
-
-                    for (let j = 0, jLen = subTrnsKeys.length; j < jLen; j += 1) {
-                        runStack[runStack.length] = transformTransition(
-                            self,
-                            subTrnsKeys[j],
-                            tattr.transform[subTrnsKeys[j]]
-                        );
-                    }
-                }
-            }
-        }
-    } else {
-        runStack[runStack.length] = tattr.bind(self);
-    }
-
-    if (typeof tstyles !== "function") {
-        for (const style in tstyles) {
-            runStack[runStack.length] = styleTransition(self, style, tstyles[style]);
-        }
-    } else {
-        runStack[runStack.length] = tstyles.bind(self);
-    }
-
-    return {
-        run(f) {
-            for (let j = 0, len = runStack.length; j < len; j += 1) {
-                runStack[j](f);
-            }
-        },
-        target: self,
-        duration: targetConfig.duration,
-        delay: targetConfig.delay ? targetConfig.delay : 0,
-        end: targetConfig.end ? targetConfig.end.bind(self, self.dataObj) : null,
-        loop: targetConfig.loop ? targetConfig.loop : 0,
-        direction: targetConfig.direction ? targetConfig.direction : "default",
-        ease: targetConfig.ease ? targetConfig.ease : "default",
-    };
 };
 
 function performJoin(data, nodes, cond) {
@@ -515,24 +429,24 @@ NodePrototype.prototype.data = function (data) {
     return this;
 };
 
-NodePrototype.prototype.interrupt = function () {
-    if (this.animList && this.animList.length > 0) {
-        for (var i = this.animList.length - 1; i >= 0; i--) {
-            queueInstance.remove(this.animList[i]);
-        }
-    }
-    this.animList = [];
-    return this;
-};
+// NodePrototype.prototype.interrupt = function () {
+//     if (this.animList && this.animList.length > 0) {
+//         for (var i = this.animList.length - 1; i >= 0; i--) {
+//             queueInstance.remove(this.animList[i]);
+//         }
+//     }
+//     this.animList = [];
+//     return this;
+// };
 
-NodePrototype.prototype.animateTo = function (targetConfig) {
-    queueInstance.add(animeId(), animate(this, targetConfig), easing(targetConfig.ease));
-    return this;
-};
+// NodePrototype.prototype.animateTo = function (targetConfig) {
+//     // queueInstance.add(animeId(), animate(this, targetConfig), easing(targetConfig.ease));
+//     return this;
+// };
 
-NodePrototype.prototype.animateExe = function (targetConfig) {
-    return animate(this, targetConfig);
-};
+// NodePrototype.prototype.animateExe = function (targetConfig) {
+//     return animate(this, targetConfig);
+// };
 
 function fetchEls(nodeSelector, dataArray) {
     let d;
@@ -815,93 +729,6 @@ function resolveObject(config, node, i) {
     return obj;
 }
 
-const animateArrayTo = function animateArrayTo(config) {
-    let node;
-    let newConfig;
-
-    for (let i = 0; i < this.stack.length; i += 1) {
-        newConfig = {};
-        node = this.stack[i];
-        newConfig = resolveObject(config, node, i);
-
-        if (config.attr && typeof config.attr !== "function") {
-            newConfig.attr = resolveObject(config.attr, node, i);
-        }
-
-        if (config.style && typeof config.style !== "function") {
-            newConfig.style = resolveObject(config.style, node, i);
-        }
-
-        if (config.end) {
-            newConfig.end = config.end;
-        }
-
-        if (config.ease) {
-            newConfig.ease = config.ease;
-        }
-
-        node.animateTo(newConfig);
-    }
-
-    return this;
-};
-
-const animateArrayExe = function animateArrayExe(config) {
-    let node;
-    let newConfig;
-    const exeArray = [];
-
-    for (let i = 0; i < this.stack.length; i += 1) {
-        newConfig = {};
-        node = this.stack[i];
-        newConfig = resolveObject(config, node, i);
-
-        if (config.attr && typeof config.attr !== "function") {
-            newConfig.attr = resolveObject(config.attr, node, i);
-        }
-
-        if (config.style && typeof config.style !== "function") {
-            newConfig.style = resolveObject(config.style, node, i);
-        }
-
-        if (config.end) {
-            newConfig.end = config.end;
-        }
-
-        if (config.ease) {
-            newConfig.ease = config.ease;
-        }
-
-        exeArray.push(node.animateExe(newConfig));
-    }
-
-    return exeArray;
-};
-
-const animatePathArrayTo = function animatePathArrayTo(config) {
-    let node;
-    const keys = Object.keys(config);
-
-    for (let i = 0, len = this.stack.length; i < len; i += 1) {
-        node = this.stack[i];
-        const conf = {};
-
-        for (let j = 0; j < keys.length; j++) {
-            let value = config[keys[j]];
-
-            if (typeof value === "function") {
-                value = value.call(node, node.dataObj, i);
-            }
-
-            conf[keys[j]] = value;
-        }
-
-        node.animatePathTo(conf);
-    }
-
-    return this;
-};
-
 const textArray = function textArray(value) {
     let node;
 
@@ -918,23 +745,8 @@ const textArray = function textArray(value) {
     }
 
     return this;
-}; // function DomPattern (self, pattern, repeatInd) {
-// }
-// DomPattern.prototype.exe = function () {
-//   return this.pattern
-// }
-// function createDomPattern (url, config) {
-//   // new DomPattern(this, patternObj, repeatInd)
-//   let patternEl = this.createEl({
-//     el: 'pattern'
-//   })
-//   patternEl.createEl({
-//     el: 'image',
-//     attr: {
-//       'xlink:href': url
-//     }
-//   })
-// }
+};
+
 // CreateElements as CollectionPrototype
 
 function CollectionPrototype(contextInfo, data, config, vDomIndex) {
@@ -1008,9 +820,9 @@ CollectionPrototype.prototype = {
     rotate,
     scale,
     exec,
-    animateTo: animateArrayTo,
-    animateExe: animateArrayExe,
-    animatePathTo: animatePathArrayTo,
+    // animateTo: animateArrayTo,
+    // animateExe: animateArrayExe,
+    // animatePathTo: animatePathArrayTo,
     remove,
     interrupt,
     text: textArray,
@@ -1044,29 +856,5 @@ const layerResizeHandler = function (entries) {
         }
     }
 };
-
-// function layerResizeBind(layer, handler) {
-//     if (!layer.ro) {
-//         layer.ro = new ResizeObserver(layerResizeHandler);
-//         layer.ro.observe(layer.container);
-//     }
-//     if (!layer.container.resizeHandler) {
-//         layer.container.resizeHandler = [];
-//     }
-//     layer.container.resizeHandler.push(handler);
-// }
-
-// function layerResizeUnBind(layer, handler) {
-//     if (!layer.container.resizeHandler) {
-//         return;
-//     }
-//     const execIndex = layer.container.resizeHandler.indexOf(handler);
-//     if (execIndex !== -1) {
-//         layer.container.resizeHandler.splice(execIndex, 1);
-//     }
-//     if (layer.container.resizeHandler.length === 0 && layer.ro) {
-//         layer.ro.disconnect();
-//     }
-// }
 
 export { NodePrototype, CollectionPrototype };

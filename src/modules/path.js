@@ -1,15 +1,9 @@
 /* eslint-disable no-undef */
 // import { geometry, queue, ease, chain } from './'
 import geometry from "./geometry.js";
-import queue from "./queue.js";
-import ease from "./ease.js";
-import chain from "./chain.js";
-import { interpolate } from "flubber";
 
 let morphIdentifier = 0;
 const t2DGeometry = geometry;
-const queueInstance = queue;
-const easying = ease;
 
 function animeId() {
     morphIdentifier += 1;
@@ -1090,182 +1084,6 @@ LinearTransitionBetweenPoints.prototype.pointAt = function (f) {
     return t2DGeometry.linearTransitionBetweenPoints(this.p0, this.p1, f);
 };
 
-function animatePathTo(targetConfig) {
-    const self = this;
-    const { duration, ease, end, loop, direction, d } = targetConfig;
-    const src = d || self.attr.d;
-    let totalLength = 0;
-    self.arrayStack = [];
-
-    if (!src) {
-        throw Error("Path Not defined");
-    }
-
-    const chainInstance = chain.sequenceChain();
-    const newPathInstance = isTypePath(src) ? src : new Path(src);
-    const arrExe = newPathInstance.stackGroup.reduce((p, c) => {
-        p = p.concat(c);
-        return p;
-    }, []);
-    const mappedArr = [];
-
-    for (let i = 0; i < arrExe.length; i += 1) {
-        if (arrExe[i].type === "Z" || arrExe[i].type === "z") {
-            mappedArr.push({
-                run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                render: new LinearTransitionBetweenPoints(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[0].p0,
-                    arrExe[i].segmentLength
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += 0;
-        } else if (["V", "v", "H", "h", "L", "l"].indexOf(arrExe[i].type) !== -1) {
-            mappedArr.push({
-                run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                render: new LinearTransitionBetweenPoints(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[i].p1,
-                    arrExe[i].length
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += arrExe[i].length;
-        } else if (arrExe[i].type === "Q" || arrExe[i].type === "q") {
-            mappedArr.push({
-                run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                render: new BezierTransition(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[i].cntrl1,
-                    arrExe[i].p1,
-                    arrExe[i].length
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += arrExe[i].length;
-        } else if (
-            arrExe[i].type === "C" ||
-            arrExe[i].type === "S" ||
-            arrExe[i].type === "c" ||
-            arrExe[i].type === "s"
-        ) {
-            const co = t2DGeometry.cubicBezierCoefficients(arrExe[i]);
-            mappedArr.push({
-                run(f) {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = this.render.execute(f);
-                    self.setAttr("d", newPathInstance);
-                },
-                target: self,
-                id: i,
-                co,
-                render: new CubicBezierTransition(
-                    arrExe[i].type,
-                    arrExe[i].p0,
-                    arrExe[i].cntrl1,
-                    arrExe[i].cntrl2,
-                    co,
-                    arrExe[i].length
-                ),
-                length: arrExe[i].length,
-            });
-            totalLength += arrExe[i].length;
-        } else if (arrExe[i].type === "M" || arrExe[i].type === "m") {
-            mappedArr.push({
-                run() {
-                    // newPathInstance.stack.splice(this.id, newPathInstance.stack.length - 1);
-                    newPathInstance.stack.length = this.id + 1;
-                    newPathInstance.stack[this.id] = {
-                        type: "M",
-                        p0: arrExe[i].p0,
-                        length: 0,
-
-                        pointAt(f) {
-                            return this.p0;
-                        },
-                    };
-                },
-                target: self,
-                id: i,
-                length: 0,
-            });
-            totalLength += 0;
-        } else {
-            // console.log('M Or Other Type')
-        }
-    }
-
-    mappedArr.forEach(function (d) {
-        d.duration = (d.length / totalLength) * duration;
-    });
-    chainInstance
-        .add(mappedArr)
-        .ease(ease)
-        .loop(loop || 0)
-        .direction(direction || "default");
-
-    if (typeof end === "function") {
-        chainInstance.end(end.bind(self));
-    }
-
-    chainInstance.commit();
-    return this;
-}
-
-function morphTo(targetConfig) {
-    const self = this;
-    const { duration } = targetConfig;
-    const { ease } = targetConfig;
-    const loop = targetConfig.loop ? targetConfig.loop : 0;
-    const direction = targetConfig.direction ? targetConfig.direction : "default";
-    const destD = targetConfig.attr.d ? targetConfig.attr.d : self.attr.d;
-    const srcPath = isTypePath(self.attr.d) ? self.attr.d.fetchPathString() : self.attr.d;
-    const destPath = isTypePath(destD) ? destD.fetchPathString() : destD;
-
-    const morphExe = interpolate(srcPath, destPath, {
-        maxSegmentLength: 25,
-    });
-
-    queueInstance.add(
-        animeId(),
-        {
-            run(f) {
-                self.setAttr("d", morphExe(f));
-            },
-            target: self,
-            duration: duration,
-            loop: loop,
-            direction: direction,
-        },
-        easying(ease)
-    );
-}
 
 function isTypePath(pathInstance) {
     return pathInstance instanceof Path;
@@ -1275,7 +1093,5 @@ export default {
     instance: function (d) {
         return new Path(d);
     },
-    isTypePath,
-    animatePathTo,
-    morphTo,
+    isTypePath
 };

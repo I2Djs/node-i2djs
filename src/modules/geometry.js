@@ -20,18 +20,6 @@ function pw(a, x) {
     return val;
 }
 
-// function angleToRadian (_) {
-//   if (isNaN(_)) { throw new Error('NaN') }
-//   return (Math.PI / 180) * _
-// }
-// function radianToAngle (_) {
-//   if (isNaN(_)) { throw new Error('NaN') }
-//   return (180 / Math.PI) * _
-// }
-// function getAngularDistance (r1, r2) {
-//   if (isNaN(r1 - r2)) { throw new Error('NaN') }
-//   return r1 - r2
-// }
 
 function bezierLength(p0, p1, p2) {
     const a = {};
@@ -53,19 +41,7 @@ function bezierLength(p0, p1, p2) {
     return (
         (A_32 * Sabc + A_2 * B * (Sabc - C_2) + (4 * C * A - B * B) * Math.log(logVal)) / (4 * A_32)
     );
-} // function bezierLengthOld (p0, p1, p2) {
-//   const interval = 0.001
-//   let sum = 0
-//   const bezierTransitionInstance = bezierTransition.bind(null, p0, p1, p2)
-//   // let p1
-//   // let p2
-//   for (let i = 0; i <= 1 - interval; i += interval) {
-//     p1 = bezierTransitionInstance(i)
-//     p2 = bezierTransitionInstance(i + interval)
-//     sum += sqrt(pw((p2.x - p1.x) / interval, 2) + (pw((p2.y - p1.y) / interval, 2))) * interval
-//   }
-//   return sum
-// }
+}
 
 function cubicBezierLength(p0, co) {
     const interval = 0.001;

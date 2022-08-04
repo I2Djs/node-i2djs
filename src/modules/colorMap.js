@@ -263,21 +263,6 @@ function colorToRGB(val) {
           };
 }
 
-function colorRGBtransition(src, dest) {
-    src = src || defaultColor;
-    dest = dest || defaultColor;
-    src = colorToRGB(src);
-    dest = colorToRGB(dest);
-    return function trans(f) {
-        return new RGBA(
-            round(src.r + (dest.r - src.r) * f),
-            round(src.g + (dest.g - src.g) * f),
-            round(src.b + (dest.b - src.b) * f),
-            round(src.a + (dest.a - src.a) * f)
-        );
-    };
-}
-
 function rgbaInstance(r, g, b, a) {
     return new RGBA(r, g, b, a);
 }
@@ -296,7 +281,6 @@ export default {
     hexToRgb: hexToRgb,
     rgbToHex: rgbToHex,
     hslToRgb: hslParse,
-    transition: colorRGBtransition,
     colorToRGB: colorToRGB,
     rgba: rgbaInstance,
     isTypeColor: isTypeColor,
