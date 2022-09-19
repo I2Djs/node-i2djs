@@ -26,19 +26,6 @@ CanvasCollection.prototype.createNode = function (ctx, config, vDomIndex) {
     return new CanvasNodeExe(ctx, config, domId(), vDomIndex);
 };
 
-function getPixlRatio(ctx) {
-    const dpr = window.devicePixelRatio || 1;
-    const bsr =
-        ctx.webkitBackingStorePixelRatio ||
-        ctx.mozBackingStorePixelRatio ||
-        ctx.msBackingStorePixelRatio ||
-        ctx.oBackingStorePixelRatio ||
-        ctx.backingStorePixelRatio ||
-        1;
-    const ratio = dpr / bsr;
-    return ratio < 1.0 ? 1.0 : ratio;
-}
-
 function domSetAttribute(attr, value) {
     if (value == null && this.attr[attr] != null) {
         delete this.attr[attr];
@@ -327,8 +314,8 @@ function CanvasClipping(self, config = {}) {
     );
 }
 
-CanvasClipping.prototype.exe = function () {
-    this.clip.execute();
+CanvasClipping.prototype.exe = function (ctx, bbox, disableRestore) {
+    this.clip.execute(disableRestore);
     this.clip.dom.ctx.clip();
     return true;
 };
@@ -486,8 +473,6 @@ RenderImage.prototype.execute = function RIexecute() {
     const { width = 0, height = 0, x = 0, y = 0 } = this.attr;
 
     if (this.imageObj) {
-        // console.log(this.imageObj);
-        // this.ctx.drawImage(this.rImageObj ? this.rImageObj.canvas : this.imageObj, x, y, width, height);
         this.ctx.drawImage(this.imageObj, x, y, width, height);
     }
 };
@@ -1403,6 +1388,7 @@ CanvasNodeExe.prototype.stylesExe = function CstylesExe() {
     let key;
     const style = this.style;
 
+    this.ctx["clip-Path"] = null;
     for (key in style) {
         if (typeof style[key] === "string" || typeof style[key] === "number") {
             value = style[key];
@@ -1413,7 +1399,7 @@ CanvasNodeExe.prototype.stylesExe = function CstylesExe() {
                 style[key] instanceof CanvasClipping ||
                 style[key] instanceof CanvasMask
             ) {
-                value = style[key].exe(this.ctx, this.dom.BBox);
+                value = style[key].exe(this.ctx, this.dom.BBox, true);
             } else {
                 value = style[key];
             }
@@ -1576,19 +1562,24 @@ CanvasNodeExe.prototype.skewY = function CskewY(y) {
     return this;
 };
 
-CanvasNodeExe.prototype.execute = function Cexecute() {
+CanvasNodeExe.prototype.execute = function Cexecute(disableRestore) {
     if (this.style.display === "none") {
         return;
     }
-    this.ctx.save();
+    console.log(disableRestore);
+    if (!disableRestore) {
+        this.ctx.save();
+    }
     this.stylesExe();
     this.attributesExe();
     if (this.dom instanceof RenderGroup) {
         for (let i = 0, len = this.children.length; i < len; i += 1) {
-            this.children[i].execute();
+            this.children[i].execute(disableRestore);
         }
     }
-    this.ctx.restore();
+    if (!disableRestore) {
+        this.ctx.restore();
+    }
 };
 
 CanvasNodeExe.prototype.prependChild = function child(childrens) {
@@ -1728,9 +1719,7 @@ CanvasNodeExe.prototype.putPixels = function (pixels) {
 };
 
 function GetCanvasImgInstance(width, height) {
-    const canvas = document.createElement("canvas");
-    canvas.setAttribute("height", height);
-    canvas.setAttribute("width", width);
+    var canvas = createCanvas(width, height);
     this.canvas = canvas;
     this.context = this.canvas.getContext("2d");
 }
@@ -1751,39 +1740,57 @@ function textureImageInstance(self, url) {
     if (!self) {
         return imageIns;
     }
+
+    self.imageObj = imageIns;
+
+    if (self.attr) {
+        self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+        self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
+    }
+    if (self instanceof RenderTexture) {
+        self.setSize(self.attr.width, self.attr.height);
+    }
+    self.imageObj = imageIns;
+
+    if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
+        self.attr.onload.call(self, self.image);
+    }
+    if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
+        self.asyncOnLoad(self.image);
+    }
     
-    imageIns.onload = function onload() {
-        if (!self) {
-            return;
-        }
-        if (self.attr) {
-            self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
-            self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
-        }
-        if (self instanceof RenderTexture) {
-            self.setSize(self.attr.width, self.attr.height);
-        }
-        self.imageObj = imageIns;
+    // imageIns.onload = function onload() {
+    //     if (!self) {
+    //         return;
+    //     }
+    //     if (self.attr) {
+    //         self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+    //         self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
+    //     }
+    //     if (self instanceof RenderTexture) {
+    //         self.setSize(self.attr.width, self.attr.height);
+    //     }
+    //     self.imageObj = imageIns;
 
-        if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
-            self.attr.onload.call(self, self.image);
-        }
-        if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
-            self.asyncOnLoad(self.image);
-        }
+    //     if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
+    //         self.attr.onload.call(self, self.image);
+    //     }
+    //     if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
+    //         self.asyncOnLoad(self.image);
+    //     }
 
-        postProcess(self);
-    };
+    //     postProcess(self);
+    // };
 
-    imageIns.onerror = function onerror(error) {
-        console.error(error);
-        if (self.nodeExe.attr.onerror && typeof self.nodeExe.attr.onerror === "function") {
-            self.nodeExe.attr.onerror.call(self.nodeExe, error);
-        }
-        if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
-            self.asyncOnLoad(self.image);
-        }
-    };
+    // imageIns.onerror = function onerror(error) {
+    //     console.error(error);
+    //     if (self.nodeExe.attr.onerror && typeof self.nodeExe.attr.onerror === "function") {
+    //         self.nodeExe.attr.onerror.call(self.nodeExe, error);
+    //     }
+    //     if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
+    //         self.asyncOnLoad(self.image);
+    //     }
+    // };
     return imageIns;
 }
 
@@ -1848,8 +1855,7 @@ RenderTexture.prototype.constructor = RenderTexture;
 
 RenderTexture.prototype.setSize = function (w, h) {
     const scale = this.attr.scale || 1;
-    this.rImageObj.setAttr("width", w * scale);
-    this.rImageObj.setAttr("height", h * scale);
+    this.rImageObj = createCanvas(w * scale, h * scale)
     postProcess(this);
 };
 
@@ -1888,6 +1894,7 @@ RenderTexture.prototype.setAttr = function RSsetAttr(attr, value) {
             if (self.image.src !== value) {
                 self.image.src = value;
             }
+            postProcess(self);
         } else if (value instanceof CanvasNodeExe || value instanceof RenderTexture) {
             self.imageObj = value.domEl;
             self.attr.height = self.attr.height ? self.attr.height : value.attr.height;
@@ -1964,7 +1971,7 @@ function createPage (ctx) {
         );
         root.ENV = "NODE";
         const execute = root.execute.bind(root);
-        const ratio = getPixlRatio(ctx);
+        const ratio = 1;
         let onClear = function (ctx, width, height) {
             ctx.clearRect(0, 0, width * ratio, height * ratio);
         };
@@ -1991,7 +1998,7 @@ function createPage (ctx) {
 
         root.addPage = function () {
             ctx.addPage();
-        }
+        };
 
         root.setContext = function (prop, value) {
             /** Expecting value to be array if multiple aruments */
@@ -2055,15 +2062,6 @@ function createPage (ctx) {
             return new RenderTexture(this, config);
         };
 
-        root.createAsyncTexture = function (config) {
-            return new Promise((resolve, reject) => {
-                const textureInstance = new RenderTexture(this, config);
-                textureInstance.onLoad(function () {
-                    resolve(textureInstance);
-                });
-            });
-        };
-
         root.setContext = function (prop, value) {
             /** Expecting value to be array if multiple aruments */
             if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
@@ -2072,6 +2070,12 @@ function createPage (ctx) {
                 this.ctx[prop] = value;
             }
         };
+
+        root.export = function (metaData = {
+            }) {
+
+            return this.domEl.toBuffer(metaData.mimeType || 'image/png', metaData);
+        }
 
         root.createPattern = createCanvasPattern;
 
@@ -2085,8 +2089,10 @@ function createPage (ctx) {
 function pdfLayer(config, height = 0, width = 0) {
     const layer = createCanvas(width, height, "pdf");
     let ctx = layer.getContext("2d", config);
-    const ratio = getPixlRatio(ctx);
+    const ratio = 1;
     ctx.type_ = "pdf";
+    ctx.quality = "best";
+    ctx.patternQuality = "best";
 
     function PDFCreator() {
         this.pages = [];
@@ -2122,6 +2128,12 @@ function pdfLayer(config, height = 0, width = 0) {
         this.pages.push(newpage);
         return newpage;
     }
+    PDFCreator.prototype.removePage = function (page) {
+        let pageIndex = this.pages.indexOf(page);
+        if (pageIndex !== -1) {
+            this.pages.splice(pageIndex, 1);
+        }
+    }
     PDFCreator.prototype.exportPdf = function (metaData = {
           title: 'I2DJs Pdf',
           keywords: 'I2Djs pdf generator demo, canvas',
@@ -2149,13 +2161,14 @@ function canvasLayer(config, height = 0, width = 0) {
     let onChangeExe;
     const layer = createCanvas(width, height);
     let ctx = layer.getContext("2d", config);
-    const ratio = getPixlRatio(ctx);
+    const ratio = 1;
     let root = createPage(ctx);
         root.domEl = layer;
         root.height = height;
         root.width = width;
         root.type = "CANVAS";
         root.ctx = ctx;
+        ctx.quality = "best";
 
     return root;
 }

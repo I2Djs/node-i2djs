@@ -174,8 +174,9 @@ CompositeArray.remove = {
         const self = this;
 
         for (let i = 0, len = data.length; i < len; i++) {
-            if (this.data.indexOf(data[i]) !== -1) {
-                this.data.splice(this.data.indexOf(data[i]), 1);
+            let index_ = this.data.indexOf(data[i]);
+            if (index_ !== -1) {
+                this.data.splice(index_, 1);
             }
         }
 

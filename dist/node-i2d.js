@@ -1838,8 +1838,9 @@ CompositeArray.remove = {
         var self = this;
 
         for (var i = 0, len = data.length; i < len; i++) {
-            if (this.data.indexOf(data[i]) !== -1) {
-                this.data.splice(this.data.indexOf(data[i]), 1);
+            var index_ = this.data.indexOf(data[i]);
+            if (index_ !== -1) {
+                this.data.splice(index_, 1);
             }
         }
 
@@ -2521,19 +2522,6 @@ CanvasCollection.prototype.createNode = function (ctx, config, vDomIndex) {
     return new CanvasNodeExe(ctx, config, domId(), vDomIndex);
 };
 
-function getPixlRatio(ctx) {
-    var dpr = window.devicePixelRatio || 1;
-    var bsr =
-        ctx.webkitBackingStorePixelRatio ||
-        ctx.mozBackingStorePixelRatio ||
-        ctx.msBackingStorePixelRatio ||
-        ctx.oBackingStorePixelRatio ||
-        ctx.backingStorePixelRatio ||
-        1;
-    var ratio = dpr / bsr;
-    return ratio < 1.0 ? 1.0 : ratio;
-}
-
 function domSetAttribute(attr, value) {
     if (value == null && this.attr[attr] != null) {
         delete this.attr[attr];
@@ -2837,8 +2825,8 @@ function CanvasClipping(self, config) {
     );
 }
 
-CanvasClipping.prototype.exe = function () {
-    this.clip.execute();
+CanvasClipping.prototype.exe = function (ctx, bbox, disableRestore) {
+    this.clip.execute(disableRestore);
     this.clip.dom.ctx.clip();
     return true;
 };
@@ -3016,8 +3004,6 @@ RenderImage.prototype.execute = function RIexecute() {
     var y = ref.y; if ( y === void 0 ) y = 0;
 
     if (this.imageObj) {
-        // console.log(this.imageObj);
-        // this.ctx.drawImage(this.rImageObj ? this.rImageObj.canvas : this.imageObj, x, y, width, height);
         this.ctx.drawImage(this.imageObj, x, y, width, height);
     }
 };
@@ -4037,6 +4023,7 @@ CanvasNodeExe.prototype.stylesExe = function CstylesExe() {
     var key;
     var style = this.style;
 
+    this.ctx["clip-Path"] = null;
     for (key in style) {
         if (typeof style[key] === "string" || typeof style[key] === "number") {
             value = style[key];
@@ -4047,7 +4034,7 @@ CanvasNodeExe.prototype.stylesExe = function CstylesExe() {
                 style[key] instanceof CanvasClipping ||
                 style[key] instanceof CanvasMask
             ) {
-                value = style[key].exe(this.ctx, this.dom.BBox);
+                value = style[key].exe(this.ctx, this.dom.BBox, true);
             } else {
                 value = style[key];
             }
@@ -4211,19 +4198,24 @@ CanvasNodeExe.prototype.skewY = function CskewY(y) {
     return this;
 };
 
-CanvasNodeExe.prototype.execute = function Cexecute() {
+CanvasNodeExe.prototype.execute = function Cexecute(disableRestore) {
     if (this.style.display === "none") {
         return;
     }
-    this.ctx.save();
+    console.log(disableRestore);
+    if (!disableRestore) {
+        this.ctx.save();
+    }
     this.stylesExe();
     this.attributesExe();
     if (this.dom instanceof RenderGroup) {
         for (var i = 0, len = this.children.length; i < len; i += 1) {
-            this.children[i].execute();
+            this.children[i].execute(disableRestore);
         }
     }
-    this.ctx.restore();
+    if (!disableRestore) {
+        this.ctx.restore();
+    }
 };
 
 CanvasNodeExe.prototype.prependChild = function child(childrens) {
@@ -4363,9 +4355,7 @@ CanvasNodeExe.prototype.putPixels = function (pixels) {
 };
 
 function GetCanvasImgInstance(width, height) {
-    var canvas = document.createElement("canvas");
-    canvas.setAttribute("height", height);
-    canvas.setAttribute("width", width);
+    var canvas = createCanvas(width, height);
     this.canvas = canvas;
     this.context = this.canvas.getContext("2d");
 }
@@ -4386,39 +4376,57 @@ function textureImageInstance(self, url) {
     if (!self) {
         return imageIns;
     }
+
+    self.imageObj = imageIns;
+
+    if (self.attr) {
+        self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+        self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
+    }
+    if (self instanceof RenderTexture) {
+        self.setSize(self.attr.width, self.attr.height);
+    }
+    self.imageObj = imageIns;
+
+    if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
+        self.attr.onload.call(self, self.image);
+    }
+    if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
+        self.asyncOnLoad(self.image);
+    }
     
-    imageIns.onload = function onload() {
-        if (!self) {
-            return;
-        }
-        if (self.attr) {
-            self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
-            self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
-        }
-        if (self instanceof RenderTexture) {
-            self.setSize(self.attr.width, self.attr.height);
-        }
-        self.imageObj = imageIns;
+    // imageIns.onload = function onload() {
+    //     if (!self) {
+    //         return;
+    //     }
+    //     if (self.attr) {
+    //         self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
+    //         self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
+    //     }
+    //     if (self instanceof RenderTexture) {
+    //         self.setSize(self.attr.width, self.attr.height);
+    //     }
+    //     self.imageObj = imageIns;
 
-        if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
-            self.attr.onload.call(self, self.image);
-        }
-        if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
-            self.asyncOnLoad(self.image);
-        }
+    //     if (self.attr && self.attr.onload && typeof self.attr.onload === "function") {
+    //         self.attr.onload.call(self, self.image);
+    //     }
+    //     if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
+    //         self.asyncOnLoad(self.image);
+    //     }
 
-        postProcess(self);
-    };
+    //     postProcess(self);
+    // };
 
-    imageIns.onerror = function onerror(error) {
-        console.error(error);
-        if (self.nodeExe.attr.onerror && typeof self.nodeExe.attr.onerror === "function") {
-            self.nodeExe.attr.onerror.call(self.nodeExe, error);
-        }
-        if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
-            self.asyncOnLoad(self.image);
-        }
-    };
+    // imageIns.onerror = function onerror(error) {
+    //     console.error(error);
+    //     if (self.nodeExe.attr.onerror && typeof self.nodeExe.attr.onerror === "function") {
+    //         self.nodeExe.attr.onerror.call(self.nodeExe, error);
+    //     }
+    //     if (self.asyncOnLoad && typeof self.asyncOnLoad === "function") {
+    //         self.asyncOnLoad(self.image);
+    //     }
+    // };
     return imageIns;
 }
 
@@ -4493,8 +4501,7 @@ RenderTexture.prototype.constructor = RenderTexture;
 
 RenderTexture.prototype.setSize = function (w, h) {
     var scale = this.attr.scale || 1;
-    this.rImageObj.setAttr("width", w * scale);
-    this.rImageObj.setAttr("height", h * scale);
+    this.rImageObj = createCanvas(w * scale, h * scale);
     postProcess(this);
 };
 
@@ -4533,6 +4540,7 @@ RenderTexture.prototype.setAttr = function RSsetAttr(attr, value) {
             if (self.image.src !== value) {
                 self.image.src = value;
             }
+            postProcess(self);
         } else if (value instanceof CanvasNodeExe || value instanceof RenderTexture) {
             self.imageObj = value.domEl;
             self.attr.height = self.attr.height ? self.attr.height : value.attr.height;
@@ -4611,7 +4619,7 @@ function createPage (ctx) {
         );
         root.ENV = "NODE";
         var execute = root.execute.bind(root);
-        var ratio = getPixlRatio(ctx);
+        var ratio = 1;
         var onClear = function (ctx, width, height) {
             ctx.clearRect(0, 0, width * ratio, height * ratio);
         };
@@ -4702,17 +4710,6 @@ function createPage (ctx) {
             return new RenderTexture(this, config);
         };
 
-        root.createAsyncTexture = function (config) {
-            var this$1$1 = this;
-
-            return new Promise(function (resolve, reject) {
-                var textureInstance = new RenderTexture(this$1$1, config);
-                textureInstance.onLoad(function () {
-                    resolve(textureInstance);
-                });
-            });
-        };
-
         root.setContext = function (prop, value) {
             /** Expecting value to be array if multiple aruments */
             if (this.ctx[prop] && typeof this.ctx[prop] === "function") {
@@ -4720,6 +4717,14 @@ function createPage (ctx) {
             } else if (this.ctx[prop]) {
                 this.ctx[prop] = value;
             }
+        };
+
+        root.export = function (metaData) {
+            if ( metaData === void 0 ) metaData = {
+            };
+
+
+            return this.domEl.toBuffer(metaData.mimeType || 'image/png', metaData);
         };
 
         root.createPattern = createCanvasPattern;
@@ -4737,8 +4742,9 @@ function pdfLayer(config, height, width) {
 
     var layer = createCanvas(width, height, "pdf");
     var ctx = layer.getContext("2d", config);
-    getPixlRatio(ctx);
     ctx.type_ = "pdf";
+    ctx.quality = "best";
+    ctx.patternQuality = "best";
 
     function PDFCreator() {
         this.pages = [];
@@ -4774,6 +4780,12 @@ function pdfLayer(config, height, width) {
         this.pages.push(newpage);
         return newpage;
     };
+    PDFCreator.prototype.removePage = function (page) {
+        var pageIndex = this.pages.indexOf(page);
+        if (pageIndex !== -1) {
+            this.pages.splice(pageIndex, 1);
+        }
+    };
     PDFCreator.prototype.exportPdf = function (metaData) {
         if ( metaData === void 0 ) metaData = {
           title: 'I2DJs Pdf',
@@ -4804,13 +4816,13 @@ function canvasLayer$1(config, height, width) {
     if ( width === void 0 ) width = 0;
     var layer = createCanvas(width, height);
     var ctx = layer.getContext("2d", config);
-    getPixlRatio(ctx);
     var root = createPage(ctx);
         root.domEl = layer;
         root.height = height;
         root.width = width;
         root.type = "CANVAS";
         root.ctx = ctx;
+        ctx.quality = "best";
 
     return root;
 }
