@@ -6,7 +6,7 @@
 
 # What is node-i2djs?
 
-node-i2djs is a node module for rendering canvas based 2D graphics. node-i2djs provides a declarative and virtual Dom based model that helps in efficient rendering. node-i2djs is built on top of the node canvas module. node-i2djs also provides APIs to create and export the content in different media formats like  Images/PDFs.. etc.
+node-i2djs is a server side node module for rendering canvas based 2D graphics. node-i2djs provides a declarative and out of the box virtual Dom interface  for easy and efficient rendering. It provides APIs to create and modify graphical content and export it in various media formats like  Images/PDFs.. etc. node-i2djs is based on node canvas module.
 
 # What does it provide?
 node-i2djs declarative approach provides an easy way to define different types of geometrical entities, as supported in SVG. It also enables pixel manipulations, multimedia support, PDF creations.. etc
