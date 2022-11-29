@@ -1,5 +1,4 @@
 /* eslint-disable no-undef */
-// import { geometry, queue, ease, chain } from './'
 import geometry from "./geometry.js";
 
 let morphIdentifier = 0;

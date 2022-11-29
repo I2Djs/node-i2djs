@@ -165,7 +165,7 @@
                         sheight: 140,
                     },
                     onload: function (argument) {
-                    	console.log("onload called");
+                    	// console.log("onload called");
                     }
                 },
             });
@@ -180,9 +180,6 @@
                 y: 400,
             },
         });
-
-
-
 
 	var clipInstance = canvasInstance.createClip();
             clipInstance.clip.createEl({

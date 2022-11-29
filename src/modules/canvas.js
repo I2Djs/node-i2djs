@@ -232,8 +232,6 @@ function PixelObject(data, width, height) {
     this.imageData = data;
     this.width = width;
     this.height = height;
-    // this.x = x;
-    // this.y = y;
 }
 
 PixelObject.prototype.get = function (pos) {
@@ -378,7 +376,6 @@ function CanvasDom() {
 
 CanvasDom.prototype = {
     render: cRender,
-    // on: addListener,
     setAttr: domSetAttribute,
     setStyle: domSetStyle,
     applyStyles,
@@ -388,15 +385,12 @@ function imageInstance(self) {
     const imageIns = new Image();
     imageIns.crossOrigin = "anonymous";
     imageIns.dataMode = Image.MODE_MIME | Image.MODE_IMAGE
-    // console.log(self.ctx.type_);
     imageIns.onload = function onload() {
         self.attr.height = self.attr.height ? self.attr.height : imageIns.naturalHeight;
         self.attr.width = self.attr.width ? self.attr.width : imageIns.naturalWidth;
         self.imageObj = imageIns;
 
         if (self.nodeExe.attr.onload && typeof self.nodeExe.attr.onload === "function") {
-            // console.log(self);
-            // console.log(self.nodeExe);
             self.nodeExe.attr.onload.call(self.nodeExe, self.image);
         }
 
@@ -523,7 +517,9 @@ RenderText.prototype.fitWidth = function () {
                 if (this.ctx.measureText(strLit + textList[i]).width < width) {
                     strLit = strLit + textList[i];
                 } else {
-                    textSubStrs.push(strLit);
+                    if (strLit && strLit.length > 0) {
+                        textSubStrs.push(strLit);
+                    }
                     strLit = textList[i];
                 }
             }
@@ -832,14 +828,6 @@ RenderPath.prototype.updateBBox = function RPupdateBBox() {
     const { transform } = self.attr;
     const { translateX, translateY, scaleX, scaleY } = parseTransform(transform);
 
-    // if (transform && transform.translate) {
-    // 	[translateX, translateY] = transform.translate;
-    // }
-
-    // if (transform && transform.scale) {
-    // 	[scaleX = 1, scaleY = scaleX] = transform.scale;
-    // }
-
     self.BBox = self.path
         ? self.path.BBox
         : {
@@ -1040,20 +1028,8 @@ RenderEllipse.prototype.constructor = RenderEllipse;
 
 RenderEllipse.prototype.updateBBox = function REupdateBBox() {
     const self = this;
-    // let translateX = 0;
-    // let translateY = 0;
-    // let scaleX = 1;
-    // let scaleY = 1;
     const { transform, cx = 0, cy = 0, rx = 0, ry = 0 } = self.attr;
     const { translateX, translateY, scaleX, scaleY } = parseTransform(transform);
-
-    // if (transform && transform.translate) {
-    // 	[translateX, translateY] = transform.translate;
-    // }
-
-    // if (transform && transform.scale) {
-    // 	[scaleX = 1, scaleY = scaleX] = transform.scale;
-    // }
 
     self.BBox = {
         x: translateX + (cx - rx) * scaleX,
@@ -1367,13 +1343,6 @@ const CanvasNodeExe = function CanvasNodeExe(context, config, id, vDomIndex) {
 
     this.dom.nodeExe = this;
     this.BBoxUpdate = true;
-    // if (config.style) {
-    // 	this.setStyle(config.style);
-    // }
-
-    // if (config.attr) {
-    // 	this.setAttr(config.attr);
-    // }
 };
 
 CanvasNodeExe.prototype = new NodePrototype();
@@ -1566,7 +1535,7 @@ CanvasNodeExe.prototype.execute = function Cexecute(disableRestore) {
     if (this.style.display === "none") {
         return;
     }
-    console.log(disableRestore);
+    // console.log(disableRestore);
     if (!disableRestore) {
         this.ctx.save();
     }
@@ -1847,8 +1816,6 @@ function RenderTexture(nodeExe, config = {}) {
         if (key !== "height" && key !== "width")
             self.setAttr(key, self.attr[key]);
     }
-
-    // self.stack = [self];
 }
 RenderTexture.prototype = new NodePrototype();
 RenderTexture.prototype.constructor = RenderTexture;
@@ -1971,9 +1938,8 @@ function createPage (ctx) {
         );
         root.ENV = "NODE";
         const execute = root.execute.bind(root);
-        const ratio = 1;
         let onClear = function (ctx, width, height) {
-            ctx.clearRect(0, 0, width * ratio, height * ratio);
+            ctx.clearRect(0, 0, width, height);
         };
 
         root.setClear = function (exe) {
@@ -2010,8 +1976,6 @@ function createPage (ctx) {
         };
 
         root.setSize = function (width_, height_) {
-            // width = width_;
-            // height = height_;
             this.domEl = createCanvas(width_, height_, "pdf");
             ctx = this.domEl.getContext("2d", config);
             ctx.type_ = "pdf";
@@ -2023,7 +1987,7 @@ function createPage (ctx) {
 
         root.execute = function executeExe() {
             onClear(ctx, this.width, this.height);
-            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             this.updateBBox();
             execute();
             if (onChangeExe && this.stateModified) {
@@ -2089,7 +2053,6 @@ function createPage (ctx) {
 function pdfLayer(config, height = 0, width = 0) {
     const layer = createCanvas(width, height, "pdf");
     let ctx = layer.getContext("2d", config);
-    const ratio = 1;
     ctx.type_ = "pdf";
     ctx.quality = "best";
     ctx.patternQuality = "best";
@@ -2161,7 +2124,6 @@ function canvasLayer(config, height = 0, width = 0) {
     let onChangeExe;
     const layer = createCanvas(width, height);
     let ctx = layer.getContext("2d", config);
-    const ratio = 1;
     let root = createPage(ctx);
         root.domEl = layer;
         root.height = height;

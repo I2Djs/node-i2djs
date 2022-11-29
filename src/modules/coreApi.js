@@ -684,17 +684,12 @@ function exec(value) {
     return this;
 }
 
-function on(eventType, hndlr) {
-    for (let i = 0, len = this.stack.length; i < len; i += 1) {
-        this.stack[i].on(eventType, hndlr);
-    }
+// function on(eventType, hndlr) {
+//     for (let i = 0, len = this.stack.length; i < len; i += 1) {
+//         this.stack[i].on(eventType, hndlr);
+//     }
 
-    return this;
-} // function in (coOr) {
-//   for (let i = 0, len = this.stack.length; i < len; i += 1) {
-//     this.stack[i].in(coOr)
-//   }
-//   return this
+//     return this;
 // }
 
 function remove() {
@@ -705,30 +700,30 @@ function remove() {
     return this;
 }
 
-function interrupt() {
-    for (let i = 0, len = this.stack.length; i < len; i += 1) {
-        this.stack[i].interrupt();
-    }
+// function interrupt() {
+//     for (let i = 0, len = this.stack.length; i < len; i += 1) {
+//         this.stack[i].interrupt();
+//     }
 
-    return this;
-}
+//     return this;
+// }
 
-function resolveObject(config, node, i) {
-    const obj = {};
-    let key;
+// function resolveObject(config, node, i) {
+//     const obj = {};
+//     let key;
 
-    for (key in config) {
-        if (key !== "end") {
-            if (typeof config[key] === "function") {
-                obj[key] = config[key].call(node, node.dataObj, i);
-            } else {
-                obj[key] = config[key];
-            }
-        }
-    }
+//     for (key in config) {
+//         if (key !== "end") {
+//             if (typeof config[key] === "function") {
+//                 obj[key] = config[key].call(node, node.dataObj, i);
+//             } else {
+//                 obj[key] = config[key];
+//             }
+//         }
+//     }
 
-    return obj;
-}
+//     return obj;
+// }
 
 const textArray = function textArray(value) {
     let node;
@@ -821,14 +816,9 @@ CollectionPrototype.prototype = {
     rotate,
     scale,
     exec,
-    // animateTo: animateArrayTo,
-    // animateExe: animateArrayExe,
-    // animatePathTo: animatePathArrayTo,
     remove,
-    interrupt,
     text: textArray,
     join,
-    on,
 };
 
 CollectionPrototype.prototype.createNode = function () {};
