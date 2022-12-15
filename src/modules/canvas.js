@@ -1975,16 +1975,6 @@ function createPage (ctx) {
             }
         };
 
-        root.setSize = function (width_, height_) {
-            this.domEl = createCanvas(width_, height_, "pdf");
-            ctx = this.domEl.getContext("2d", config);
-            ctx.type_ = "pdf";
-            this.width = width_;
-            this.height = height_;
-            this.ctx = ctx;
-            this.execute();
-        };
-
         root.execute = function executeExe() {
             onClear(ctx, this.width, this.height);
             ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2087,6 +2077,16 @@ function pdfLayer(config, height = 0, width = 0) {
         newpage.EXEType = "pdf";
         newpage.ctx = ctx;
 
+        newpage.setSize = function (width_, height_) {
+            this.domEl = createCanvas(width_, height_, "pdf");
+            ctx = this.domEl.getContext("2d", config);
+            ctx.type_ = "pdf";
+            this.width = width_;
+            this.height = height_;
+            this.ctx = ctx;
+            this.execute();
+        };
+
         ctx.textDrawingMode = "glyph";
         this.pages.push(newpage);
         return newpage;
@@ -2131,6 +2131,14 @@ function canvasLayer(config, height = 0, width = 0) {
         root.type = "CANVAS";
         root.ctx = ctx;
         ctx.quality = "best";
+        root.setSize = function (width_, height_) {
+            this.domEl = createCanvas(width_, height_);
+            ctx = this.domEl.getContext("2d", config);
+            this.width = width_;
+            this.height = height_;
+            this.ctx = ctx;
+            this.execute();
+        };
 
     return root;
 }
