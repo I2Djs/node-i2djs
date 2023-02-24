@@ -6,17 +6,18 @@
 
 # What is node-i2djs?
 
-node-i2djs is a server side node module for rendering canvas based 2D graphics. node-i2djs provides a declarative and out of the box virtual Dom interface  for easy and efficient rendering. It provides APIs to create and modify graphical content and export it in various media formats like  Images/PDFs.. etc. node-i2djs is based on node canvas module.
+Node-i2djs is a server side node.js module that allows for the creation of 2D graphics using canvas, and features a declarative and virtual DOM-based model for efficient rendering. It is constructed on top of the node-canvas module and provides APIs to produce and export content in various media formats, including images, PDFs.. etc.
 
 # What does it provide?
-node-i2djs declarative approach provides an easy way to define different types of geometrical entities, as supported in SVG. It also enables pixel manipulations, multimedia support, PDF creations.. etc
+Node-i2djs utilizes a declarative method that simplifies the definition of various geometrical entities, similar to those supported in SVG. This approach also facilitates pixel manipulations, multimedia support, and the creation of PDF files... etc
+It provides API to create, access, modify, and delete graphical entities on canvas. Functionalities such as Data Joins (Join-Actions) help in associating/binding data with graphical elements and their manipulations.
 
 It provides API's to create, access, modify, and delete graphical entities on canvas. Functionalities such as Data Joins (Join-Actions) help in associating/binding data with graphical elements and their manipulations.
 The following node-i2djs features helps in achieving efficient and scalable rendering:
-  - <b> Declarative Rendering: </b> Simple syntax and semantics by abstracting complex native syntax. Inline with client - I2Djs framework.
-  - <b> Virtual DOM tree:</b> node-I2Djs (all contexts) implements a mini Virtual DOM tree, which is a Javascript object representation of the corresponding DOM. Helps in keeping the state intact and enable operations such as update, addition and deletion as per the requirements.
-  - <b> Join-Actions(Data Joins):</b> node-i2djs Join-Action mechanism helps in binding the data to the graphical elements by defining the actions - Enter, Update and Exit. It provides flexible handlers to manipulate data and trigger corresponding actions in an optimal way.
-  - <b> Multi page PDF / media support:</b> node-i2djs lets u export the content in different media formats. It also provides exclusive apis to create multi page graphical PDFs.
+  - <b> Declarative Rendering: </b>Node-i2djs provides a simpler syntax and semantics by abstracting from complex native syntax. Inline with client - I2Djs framework.
+  - <b> Virtual DOM tree:</b> Node-I2Djs implements a Virtual DOM tree, which is a JavaScript object that reflects the corresponding rendering DOM. This feature preserves the state and allows for Create, Read, Update, and Delete operations on the rendering tree.
+  - <b> Join-Actions(Data Joins):</b> The Join-Action mechanism in Node-i2djs facilitates the binding of data to graphical elements by defining the Enter, Update, and Exit actions. This feature offers adaptable handlers to modify data and activate corresponding actions in an efficient manner.
+  - <b> Multi page PDF / media support:</b> Node-i2djs lets u export the content in different media formats. It also provides exclusive apis to create multi page graphical PDFs.
 
 
 ## Example
