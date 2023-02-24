@@ -19,6 +19,9 @@ The following node-i2djs features helps in achieving efficient and scalable rend
   - <b> Join-Actions(Data Joins):</b> The Join-Action mechanism in Node-i2djs facilitates the binding of data to graphical elements by defining the Enter, Update, and Exit actions. This feature offers adaptable handlers to modify data and activate corresponding actions in an efficient manner.
   - <b> Multi page PDF / media support:</b> Node-i2djs lets u export the content in different media formats. It also provides exclusive apis to create multi page graphical PDFs.
 
+## Documentation
+<a href="https://nswamy14.gitbook.io/node-i2djs/"><img width='150' src="https://raw.githubusercontent.com/I2Djs/I2Djs/snaps/examples/snaps/gitbookIcon.png"></a>
+
 
 ## Example
   ### Click on below example to explore node-i2djs
